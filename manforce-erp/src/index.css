@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-navy: #1e293b;
+  --color-brand-gold: #c5a447;
+  --color-brand-cream: #fdfbf7;
+  --color-brand-blue: #1e3a8a;
+  --color-sidebar-active: #334155;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
