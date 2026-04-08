@@ -9,6 +9,7 @@ import {
 // Import all pages
 import RoleSelection from "./pages/RoleSelection";
 import AdminDashboard from "./pages/AdminDashboard";
+import HRDashboard from "./pages/HRDashboard"; // 1. IMPORT THE HR DASHBOARD
 import Workers from "./pages/Workers";
 import Clients from "./pages/Clients";
 import Deployment from "./pages/Deployment";
@@ -27,25 +28,24 @@ export default function App() {
       <Routes>
         {/* Auth / Landing */}
         <Route path="/" element={<RoleSelection />} />
-
-        {/* Core Admin Sections */}
+        {/* Dashboards */}
         <Route path="/dashboard" element={<AdminDashboard />} />
+        <Route path="/hr-dashboard" element={<HRDashboard />} />{" "}
+        {/* 2. ADD THE HR ROUTE */}
+        {/* Core Sections */}
         <Route path="/workers" element={<Workers />} />
         <Route path="/clients" element={<Clients />} />
         <Route path="/deployment" element={<Deployment />} />
-
         {/* Operations Sections */}
         <Route path="/attendance" element={<Attendance />} />
         <Route path="/recruitment" element={<Recruitment />} />
         <Route path="/payroll" element={<Payroll />} />
         <Route path="/invoices" element={<Invoices />} />
         <Route path="/leave-mgmt" element={<LeaveMgmt />} />
-
         {/* Compliance & System */}
         <Route path="/documents" element={<Documents />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/roles" element={<RolesAccess />} />
-
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
