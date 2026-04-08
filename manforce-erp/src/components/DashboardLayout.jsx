@@ -1,59 +1,236 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, LogOut, Bell } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  Truck,
+  CalendarCheck,
+  UserCheck,
+  ClipboardList,
+  Lock,
+  Bell,
+  LogOut,
+  Wallet,
+  FileText,
+  FileStack,
+  BarChart3,
+} from "lucide-react";
+
+const SidebarItem = ({ icon: Icon, label, active, badge, onClick }) => (
+  <div
+    onClick={onClick}
+    className={`flex items-center justify-between px-6 py-2.5 cursor-pointer transition-all duration-200 ${
+      active
+        ? "bg-[#1e293b] border-r-4 border-brand-gold"
+        : "hover:bg-slate-800"
+    }`}
+  >
+    <div className="flex items-center gap-3">
+      <Icon
+        size={17}
+        className={active ? "text-brand-gold" : "text-slate-400"}
+      />
+      <span
+        className={`text-[13px] ${active ? "text-white font-medium" : "text-slate-400"}`}
+      >
+        {label}
+      </span>
+    </div>
+    {badge && (
+      <span className="bg-brand-gold text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+        {badge}
+      </span>
+    )}
+  </div>
+);
 
 export default function DashboardLayout({ children, role = "admin" }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Define which links each role can see
-  const menuItems = {
-    admin: [
-      { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-      { label: "Workers", path: "/workers", icon: Users },
-      { label: "Payroll", path: "/payroll", icon: LayoutDashboard },
-    ],
-    hr: [
-      { label: "Dashboard", path: "/hr-dashboard", icon: LayoutDashboard },
-      { label: "Workers", path: "/workers", icon: Users },
-      { label: "Leave Mgmt", path: "/leave-mgmt", icon: LayoutDashboard },
-    ],
+  // Explicitly check if the current context is HR
+  const isHR = role === "hr";
+
+  const getPageTitle = () => {
+    const path = location.pathname.replace("/", "").replace("hr-", "");
+    if (path.includes("dashboard")) return "Dashboard";
+    if (path.includes("workers")) return "Workers";
+    if (path === "roles") return "Roles & Access";
+    return path.replace("-", " ") || "Home";
   };
 
   return (
-    <div className="flex h-screen bg-brand-cream">
-      {/* Dynamic Sidebar */}
-      <aside className="w-64 bg-brand-navy flex flex-col">
-        <div className="p-6 font-bold text-white text-xl">ManForce</div>
-        <nav className="flex-1 px-4">
-          {menuItems[role]?.map((item) => (
-            <div
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`p-3 cursor-pointer rounded-lg mb-1 ${location.pathname === item.path ? "bg-sidebar-active text-brand-gold" : "text-slate-400"}`}
-            >
-              <div className="flex items-center gap-3 text-sm">
-                <item.icon size={18} /> {item.label}
-              </div>
-            </div>
-          ))}
+    <div className="flex h-screen bg-[#FDFBF7] font-sans text-slate-900">
+      <aside className="w-64 bg-brand-navy flex flex-col shadow-2xl shrink-0 z-20">
+        <div className="p-6 mb-4 flex items-center gap-3">
+          <div className="bg-brand-gold p-2 rounded-lg text-white font-bold text-xl shadow-sm">
+            M
+          </div>
+          <div>
+            <h1 className="text-white font-bold text-sm leading-none">
+              ManForce ERP
+            </h1>
+            <p className="text-[9px] text-slate-500 uppercase font-bold mt-1">
+              Dubai · UAE
+            </p>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-0.5 overflow-y-auto pb-6 custom-scrollbar">
+          <p className="px-6 text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-widest">
+            Core
+          </p>
+
+          <SidebarItem
+            icon={LayoutDashboard}
+            label="Dashboard"
+            active={location.pathname.includes("dashboard")}
+            onClick={() =>
+              navigate(isHR ? "/hr-dashboard" : "/admin-dashboard")
+            }
+          />
+          <SidebarItem
+            icon={Users}
+            label="Workers"
+            badge="142"
+            active={location.pathname.includes("workers")}
+            onClick={() => navigate(isHR ? "/hr-workers" : "/workers")}
+          />
+          {!isHR && (
+            <>
+              <SidebarItem
+                icon={Briefcase}
+                label="Clients"
+                active={location.pathname === "/clients"}
+                onClick={() => navigate("/clients")}
+              />
+              <SidebarItem
+                icon={Truck}
+                label="Deployment"
+                active={location.pathname === "/deployment"}
+                onClick={() => navigate("/deployment")}
+              />
+            </>
+          )}
+
+          <p className="px-6 text-[10px] font-bold text-slate-500 uppercase mt-8 mb-3 tracking-widest">
+            Operations
+          </p>
+
+          <SidebarItem
+            icon={CalendarCheck}
+            label="Attendance"
+            active={location.pathname.includes("attendance")}
+            onClick={() => navigate(isHR ? "/hr-attendance" : "/attendance")}
+          />
+          <SidebarItem
+            icon={UserCheck}
+            label="Recruitment"
+            badge="7"
+            active={location.pathname.includes("recruitment")}
+            onClick={() => navigate(isHR ? "/hr-recruitment" : "/recruitment")}
+          />
+          {!isHR && (
+            <>
+              <SidebarItem
+                icon={Wallet}
+                label="Payroll"
+                active={location.pathname === "/payroll"}
+                onClick={() => navigate("/payroll")}
+              />
+              <SidebarItem
+                icon={FileText}
+                label="Invoices"
+                active={location.pathname === "/invoices"}
+                onClick={() => navigate("/invoices")}
+              />
+            </>
+          )}
+          <SidebarItem
+            icon={ClipboardList}
+            label="Leave Mgmt"
+            badge="3"
+            active={location.pathname.includes("leave-mgmt")}
+            onClick={() => navigate(isHR ? "/hr-leave-mgmt" : "/leave-mgmt")}
+          />
+
+          <p className="px-6 text-[10px] font-bold text-slate-500 uppercase mt-8 mb-3 tracking-widest">
+            Compliance
+          </p>
+
+          <SidebarItem
+            icon={FileStack}
+            label="Documents"
+            badge="3"
+            active={location.pathname.includes("documents")}
+            onClick={() => navigate(isHR ? "/hr-documents" : "/documents")}
+          />
+          <SidebarItem
+            icon={BarChart3}
+            label="Reports"
+            active={location.pathname.includes("reports")}
+            onClick={() => navigate(isHR ? "/hr-reports" : "/reports")}
+          />
+
+          {!isHR && (
+            <>
+              <p className="px-6 text-[10px] font-bold text-slate-500 uppercase mt-8 mb-3 tracking-widest">
+                System
+              </p>
+              <SidebarItem
+                icon={Lock}
+                label="Roles & Access"
+                active={location.pathname === "/roles"}
+                onClick={() => navigate("/roles")}
+              />
+            </>
+          )}
         </nav>
-        {/* Profile Card based on Role */}
-        <div className="p-4 border-t border-slate-800 text-white text-xs">
-          Logged in as:{" "}
-          <span className="text-brand-gold uppercase">{role}</span>
+
+        <div className="p-4 border-t border-slate-800">
+          <div className="flex items-center gap-3 bg-[#1e293b] p-3 rounded-xl mb-3 border border-slate-700/50 shadow-inner">
+            <div className="w-8 h-8 rounded-full bg-brand-gold flex items-center justify-center text-white font-bold text-[10px]">
+              {isHR ? "HR" : "AD"}
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-white font-bold">
+                {isHR ? "HR Manager" : "Admin"}
+              </p>
+              <p className="text-[10px] text-slate-500 font-medium">
+                {isHR ? "HR Dept" : "Super Admin"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-red-400 text-xs font-bold w-full p-2.5 hover:bg-red-500/10 rounded-xl transition-all cursor-pointer"
+          >
+            <LogOut size={16} /> Sign Out
+          </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <header className="h-16 bg-white border-b flex items-center justify-between px-8">
-          <h2 className="font-bold text-slate-700 capitalize">
-            {location.pathname.replace("/", "")}
+      <main className="flex-1 overflow-y-auto bg-[#FDFBF7]">
+        <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between sticky top-0 z-10">
+          <h2 className="text-xl font-bold text-slate-800 capitalize">
+            {getPageTitle()}
           </h2>
-          <Bell size={20} className="text-slate-400" />
+          <div className="flex items-center gap-4">
+            <div
+              className={`px-3 py-1 rounded-full text-[11px] font-bold border ${isHR ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-amber-50 text-amber-600 border-amber-100"}`}
+            >
+              {isHR ? "HR Portal" : "Admin"}
+            </div>
+            <div className="relative p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-brand-gold cursor-pointer transition-colors">
+              <Bell size={20} />
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-[9px] text-white flex items-center justify-center rounded-full border-2 border-white font-bold">
+                5
+              </span>
+            </div>
+          </div>
         </header>
-        <div className="p-8">{children}</div>
+        <div className="p-8 max-w-[1600px] mx-auto">{children}</div>
       </main>
     </div>
   );

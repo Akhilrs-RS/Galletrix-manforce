@@ -6,47 +6,62 @@ import {
   Navigate,
 } from "react-router-dom";
 
-// Import all pages
-import RoleSelection from "./pages/RoleSelection";
-import AdminDashboard from "./pages/AdminDashboard";
-import HRDashboard from "./pages/HRDashboard"; // 1. IMPORT THE HR DASHBOARD
-import Workers from "./pages/Workers";
-import Clients from "./pages/Clients";
-import Deployment from "./pages/Deployment";
-import Attendance from "./pages/Attendance";
-import Recruitment from "./pages/Recruitment";
-import Payroll from "./pages/Payroll";
-import Invoices from "./pages/Invoices";
-import LeaveMgmt from "./pages/LeaveMgmt";
-import Documents from "./pages/Documents";
-import Reports from "./pages/Reports";
-import RolesAccess from "./pages/RolesAccess";
+// Auth / Landing
+import RoleSelection from "./pages/auth/RoleSelection";
+
+// Core Pages
+import AdminDashboard from "./pages/core/AdminDashboard";
+import HRDashboard from "./pages/core/HRDashboard";
+import Workers from "./pages/core/Workers";
+import Clients from "./pages/core/Clients";
+import Deployment from "./pages/core/Deployment";
+import RolesAccess from "./pages/core/RolesAccess";
+
+// Operations Pages
+import Attendance from "./pages/operations/Attendance";
+import Recruitment from "./pages/operations/Recruitment";
+import Payroll from "./pages/operations/Payroll";
+import Invoices from "./pages/operations/Invoices";
+import LeaveMgmt from "./pages/operations/LeaveMgmt";
+
+// Compliance Pages
+import Documents from "./pages/compliance/Documents";
+import Reports from "./pages/compliance/Reports";
 
 export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Auth / Landing */}
+        {/* ENTRY POINT */}
         <Route path="/" element={<RoleSelection />} />
-        {/* Dashboards */}
-        <Route path="/dashboard" element={<AdminDashboard />} />
-        <Route path="/hr-dashboard" element={<HRDashboard />} />{" "}
-        {/* 2. ADD THE HR ROUTE */}
-        {/* Core Sections */}
-        <Route path="/workers" element={<Workers />} />
-        <Route path="/clients" element={<Clients />} />
-        <Route path="/deployment" element={<Deployment />} />
-        {/* Operations Sections */}
-        <Route path="/attendance" element={<Attendance />} />
-        <Route path="/recruitment" element={<Recruitment />} />
-        <Route path="/payroll" element={<Payroll />} />
-        <Route path="/invoices" element={<Invoices />} />
-        <Route path="/leave-mgmt" element={<LeaveMgmt />} />
-        {/* Compliance & System */}
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/roles" element={<RolesAccess />} />
-        {/* Fallback */}
+
+        {/* --- ADMIN MODULE --- */}
+        <Route
+          path="/admin-dashboard"
+          element={<AdminDashboard role="admin" />}
+        />
+        <Route path="/workers" element={<Workers role="admin" />} />
+        <Route path="/clients" element={<Clients role="admin" />} />
+        <Route path="/deployment" element={<Deployment role="admin" />} />
+        <Route path="/attendance" element={<Attendance role="admin" />} />
+        <Route path="/recruitment" element={<Recruitment role="admin" />} />
+        <Route path="/leave-mgmt" element={<LeaveMgmt role="admin" />} />
+        <Route path="/payroll" element={<Payroll role="admin" />} />
+        <Route path="/invoices" element={<Invoices role="admin" />} />
+        <Route path="/documents" element={<Documents role="admin" />} />
+        <Route path="/reports" element={<Reports role="admin" />} />
+        <Route path="/roles" element={<RolesAccess role="admin" />} />
+
+        {/* --- HR MODULE --- */}
+        <Route path="/hr-dashboard" element={<HRDashboard role="hr" />} />
+        <Route path="/hr-workers" element={<Workers role="hr" />} />
+        <Route path="/hr-attendance" element={<Attendance role="hr" />} />
+        <Route path="/hr-recruitment" element={<Recruitment role="hr" />} />
+        <Route path="/hr-leave-mgmt" element={<LeaveMgmt role="hr" />} />
+        <Route path="/hr-documents" element={<Documents role="hr" />} />
+        <Route path="/hr-reports" element={<Reports role="hr" />} />
+
+        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

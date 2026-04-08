@@ -18,35 +18,35 @@ export default function RoleSelection() {
       title: "Admin",
       desc: "Full access",
       icon: ShieldCheck,
-      path: "/dashboard",
+      path: "/admin-dashboard", // ✅ UPDATED from /dashboard
     },
     {
       id: "hr",
       title: "HR Manager",
       desc: "Workers & operations",
       icon: Users,
-      path: "/hr-dashboard",
+      path: "/hr-dashboard", // ✅ Matches your App.jsx
     },
     {
       id: "accounts",
       title: "Accounts",
       desc: "Invoices & Payroll",
       icon: Wallet,
-      path: null, // No route
+      path: null,
     },
     {
       id: "supervisor",
       title: "Supervisor",
       desc: "Attendance & site",
       icon: ClipboardList,
-      path: null, // No route
+      path: null,
     },
     {
       id: "worker",
       title: "Worker",
       desc: "My profile & leave",
       icon: UserCheck,
-      path: null, // No route
+      path: null,
     },
   ];
 
