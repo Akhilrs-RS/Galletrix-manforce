@@ -18,14 +18,28 @@ export default function RoleSelection() {
       title: "Admin",
       desc: "Full access",
       icon: ShieldCheck,
-      path: "/admin-dashboard", // ✅ UPDATED from /dashboard
+      path: "/admin-dashboard",
     },
     {
       id: "hr",
       title: "HR Manager",
       desc: "Workers & operations",
       icon: Users,
-      path: "/hr-dashboard", // ✅ Matches your App.jsx
+      path: "/hr-dashboard",
+    },
+    {
+      id: "supervisor",
+      title: "Supervisor",
+      desc: "Attendance & site",
+      icon: ClipboardList,
+      path: "/sv-dashboard",
+    },
+    {
+      id: "worker",
+      title: "Worker",
+      desc: "My profile & leave",
+      icon: UserCheck,
+      path: "/worker-dashboard", // ✅ UPDATED: Path added for Worker
     },
     {
       id: "accounts",
@@ -34,25 +48,15 @@ export default function RoleSelection() {
       icon: Wallet,
       path: null,
     },
-    {
-      id: "supervisor",
-      title: "Supervisor",
-      desc: "Attendance & site",
-      icon: ClipboardList,
-      path: null,
-    },
-    {
-      id: "worker",
-      title: "Worker",
-      desc: "My profile & leave",
-      icon: UserCheck,
-      path: null,
-    },
   ];
+
+  // ✅ UPDATED: Added 'worker' to the list of enabled web roles
+  const isWebRole = ["admin", "hr", "supervisor", "worker"].includes(
+    selectedRole,
+  );
 
   const handleLogin = () => {
     const role = roles.find((r) => r.id === selectedRole);
-    // Only navigate if a path exists (Admin or HR)
     if (role && role.path) {
       navigate(role.path);
     }
@@ -60,7 +64,7 @@ export default function RoleSelection() {
 
   return (
     <div className="min-h-screen bg-brand-navy flex items-center justify-center p-4 font-sans">
-      <div className="bg-brand-cream p-10 rounded-[2rem] shadow-2xl w-full max-w-md text-center">
+      <div className="bg-[#FAF9F6] p-10 rounded-[2rem] shadow-2xl w-full max-w-md text-center">
         <div className="inline-block bg-brand-gold p-4 rounded-xl text-white font-bold text-2xl mb-4 shadow-md">
           M
         </div>
@@ -100,7 +104,7 @@ export default function RoleSelection() {
               >
                 {role.title}
               </p>
-              <p className="text-[10px] text-slate-400 font-medium">
+              <p className="text-[10px] text-slate-400 font-medium leading-tight">
                 {role.desc}
               </p>
             </button>
@@ -110,22 +114,22 @@ export default function RoleSelection() {
         {/* DYNAMIC LOGIN BUTTON */}
         <button
           onClick={handleLogin}
+          disabled={!isWebRole}
           className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
-            selectedRole === "admin" || selectedRole === "hr"
+            isWebRole
               ? "bg-brand-gold text-white hover:brightness-110 shadow-brand-gold/20"
               : "bg-slate-200 text-slate-400 cursor-not-allowed"
           }`}
         >
           Login as {roles.find((r) => r.id === selectedRole)?.title}{" "}
-          {(selectedRole === "admin" || selectedRole === "hr") && (
-            <span className="text-lg">→</span>
-          )}
+          {isWebRole && <span className="text-lg">→</span>}
         </button>
 
         {/* Helper text for inactive roles */}
-        {!(selectedRole === "admin" || selectedRole === "hr") && (
+        {!isWebRole && (
           <p className="text-[9px] text-slate-400 mt-4 italic font-medium">
-            Access for this role is currently restricted to the mobile app.
+            Accounts portal is under maintenance. Please use the desktop
+            version.
           </p>
         )}
       </div>
