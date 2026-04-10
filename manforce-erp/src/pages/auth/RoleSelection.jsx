@@ -6,11 +6,16 @@ import {
   Wallet,
   ClipboardList,
   UserCheck,
+  Lock,
+  User as UserIcon,
+  ArrowLeft,
 } from "lucide-react";
 
 export default function RoleSelection() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState("admin");
+  const [showCredentials, setShowCredentials] = useState(false); // New state
+  const [credentials, setCredentials] = useState({ userId: "", password: "" });
 
   const roles = [
     {
@@ -39,7 +44,7 @@ export default function RoleSelection() {
       title: "Worker",
       desc: "My profile & leave",
       icon: UserCheck,
-      path: "/worker-dashboard", // ✅ UPDATED: Path added for Worker
+      path: "/worker-dashboard",
     },
     {
       id: "accounts",
@@ -50,21 +55,32 @@ export default function RoleSelection() {
     },
   ];
 
-  // ✅ UPDATED: Added 'worker' to the list of enabled web roles
   const isWebRole = ["admin", "hr", "supervisor", "worker"].includes(
     selectedRole,
   );
 
-  const handleLogin = () => {
+  const handleInitialClick = () => {
+    if (isWebRole) setShowCredentials(true);
+  };
+
+  const handleFinalLogin = (e) => {
+    e.preventDefault();
     const role = roles.find((r) => r.id === selectedRole);
-    if (role && role.path) {
-      navigate(role.path);
+
+    // Logic: In a real app, you'd validate credentials here.
+    if (credentials.userId && credentials.password) {
+      if (role && role.path) {
+        navigate(role.path);
+      }
+    } else {
+      alert("Please enter both User ID and Password");
     }
   };
 
   return (
     <div className="min-h-screen bg-brand-navy flex items-center justify-center p-4 font-sans">
-      <div className="bg-[#FAF9F6] p-10 rounded-[2rem] shadow-2xl w-full max-w-md text-center">
+      <div className="bg-[#FAF9F6] p-10 rounded-[2rem] shadow-2xl w-full max-w-md text-center transition-all duration-500">
+        {/* LOGO & HEADER */}
         <div className="inline-block bg-brand-gold p-4 rounded-xl text-white font-bold text-2xl mb-4 shadow-md">
           M
         </div>
@@ -72,64 +88,121 @@ export default function RoleSelection() {
           ManForce ERP
         </h2>
         <p className="text-[10px] text-slate-500 tracking-[0.2em] mb-8 uppercase font-semibold">
-          Dubai · UAE · Manpower Management
+          Dubai · UAE
         </p>
 
-        <h3 className="font-bold text-slate-700 mb-6 text-sm tracking-tight">
-          Select Your Role to Continue
-        </h3>
+        {!showCredentials ? (
+          /* --- PHASE 1: ROLE SELECTION --- */
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h3 className="font-bold text-slate-700 mb-6 text-sm tracking-tight">
+              Select Your Role to Continue
+            </h3>
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => setSelectedRole(role.id)}
+                  className={`p-4 border rounded-2xl transition-all text-left shadow-sm cursor-pointer group ${
+                    selectedRole === role.id
+                      ? "border-brand-gold bg-brand-gold/10 ring-2 ring-brand-gold/20"
+                      : "border-slate-200 bg-white hover:border-brand-gold/50"
+                  }`}
+                >
+                  <role.icon
+                    className={`mb-2 ${selectedRole === role.id ? "text-brand-gold" : "text-slate-400"}`}
+                    size={24}
+                  />
+                  <p
+                    className={`font-bold text-xs ${selectedRole === role.id ? "text-brand-gold" : "text-slate-800"}`}
+                  >
+                    {role.title}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {role.desc}
+                  </p>
+                </button>
+              ))}
+            </div>
 
-        {/* ROLE GRID */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          {roles.map((role) => (
             <button
-              key={role.id}
-              onClick={() => setSelectedRole(role.id)}
-              className={`p-4 border rounded-2xl transition-all text-left shadow-sm cursor-pointer group ${
-                selectedRole === role.id
-                  ? "border-brand-gold bg-brand-gold/10 ring-2 ring-brand-gold/20"
-                  : "border-slate-200 bg-white hover:border-brand-gold/50"
+              onClick={handleInitialClick}
+              disabled={!isWebRole}
+              className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
+                isWebRole
+                  ? "bg-brand-gold text-white hover:brightness-110"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
               }`}
             >
-              <role.icon
-                className={`mb-2 transition-colors ${
-                  selectedRole === role.id
-                    ? "text-brand-gold"
-                    : "text-slate-400 group-hover:text-brand-gold"
-                }`}
-                size={24}
-              />
-              <p
-                className={`font-bold text-xs ${selectedRole === role.id ? "text-brand-gold" : "text-slate-800"}`}
-              >
-                {role.title}
-              </p>
-              <p className="text-[10px] text-slate-400 font-medium leading-tight">
-                {role.desc}
-              </p>
+              Continue as {roles.find((r) => r.id === selectedRole)?.title}{" "}
+              <span className="text-lg">→</span>
             </button>
-          ))}
-        </div>
+          </div>
+        ) : (
+          /* --- PHASE 2: CREDENTIALS FORM --- */
+          <form
+            onSubmit={handleFinalLogin}
+            className="animate-in fade-in zoom-in-95 duration-300 text-left"
+          >
+            <button
+              type="button"
+              onClick={() => setShowCredentials(false)}
+              className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-6 hover:text-brand-gold transition-colors"
+            >
+              <ArrowLeft size={14} /> Back to roles
+            </button>
 
-        {/* DYNAMIC LOGIN BUTTON */}
-        <button
-          onClick={handleLogin}
-          disabled={!isWebRole}
-          className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
-            isWebRole
-              ? "bg-brand-gold text-white hover:brightness-110 shadow-brand-gold/20"
-              : "bg-slate-200 text-slate-400 cursor-not-allowed"
-          }`}
-        >
-          Login as {roles.find((r) => r.id === selectedRole)?.title}{" "}
-          {isWebRole && <span className="text-lg">→</span>}
-        </button>
+            <h3 className="font-bold text-slate-800 text-lg mb-1">Sign In</h3>
+            <p className="text-xs text-slate-400 mb-6">
+              Enter credentials for{" "}
+              {roles.find((r) => r.id === selectedRole)?.title}
+            </p>
 
-        {/* Helper text for inactive roles */}
-        {!isWebRole && (
+            <div className="space-y-4">
+              <div className="relative">
+                <UserIcon
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="User ID"
+                  required
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/5 transition-all text-sm"
+                  onChange={(e) =>
+                    setCredentials({ ...credentials, userId: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="relative">
+                <Lock
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
+                  size={18}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  required
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/5 transition-all text-sm"
+                  onChange={(e) =>
+                    setCredentials({ ...credentials, password: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full mt-8 py-4 bg-brand-gold text-white rounded-xl font-bold shadow-lg shadow-brand-gold/20 hover:brightness-110 transition-all"
+            >
+              Confirm Login
+            </button>
+          </form>
+        )}
+
+        {!isWebRole && !showCredentials && (
           <p className="text-[9px] text-slate-400 mt-4 italic font-medium">
-            Accounts portal is under maintenance. Please use the desktop
-            version.
+            Portal access restricted for this role.
           </p>
         )}
       </div>
