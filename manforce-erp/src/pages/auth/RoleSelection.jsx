@@ -14,7 +14,7 @@ import {
 export default function RoleSelection() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState("admin");
-  const [showCredentials, setShowCredentials] = useState(false); // New state
+  const [showCredentials, setShowCredentials] = useState(false);
   const [credentials, setCredentials] = useState({ userId: "", password: "" });
 
   const roles = [
@@ -49,15 +49,14 @@ export default function RoleSelection() {
     {
       id: "accounts",
       title: "Accounts",
-      desc: "Invoices & Payroll",
+      desc: "Salary & Expenses",
       icon: Wallet,
-      path: null,
+      path: "/accounts-dashboard", // MUST match the route in App.jsx
     },
   ];
 
-  const isWebRole = ["admin", "hr", "supervisor", "worker"].includes(
-    selectedRole,
-  );
+  // Logic to check if the role has a portal path
+  const isWebRole = roles.find((r) => r.id === selectedRole)?.path !== null;
 
   const handleInitialClick = () => {
     if (isWebRole) setShowCredentials(true);
@@ -65,12 +64,11 @@ export default function RoleSelection() {
 
   const handleFinalLogin = (e) => {
     e.preventDefault();
-    const role = roles.find((r) => r.id === selectedRole);
+    const roleObj = roles.find((r) => r.id === selectedRole);
 
-    // Logic: In a real app, you'd validate credentials here.
     if (credentials.userId && credentials.password) {
-      if (role && role.path) {
-        navigate(role.path);
+      if (roleObj && roleObj.path) {
+        navigate(roleObj.path);
       }
     } else {
       alert("Please enter both User ID and Password");
@@ -78,9 +76,9 @@ export default function RoleSelection() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-navy flex items-center justify-center p-4 font-sans">
+    <div className="min-h-screen bg-brand-navy flex items-center justify-center p-4 font-sans text-left">
       <div className="bg-[#FAF9F6] p-10 rounded-[2rem] shadow-2xl w-full max-w-md text-center transition-all duration-500">
-        {/* LOGO & HEADER */}
+        {/* LOGO */}
         <div className="inline-block bg-brand-gold p-4 rounded-xl text-white font-bold text-2xl mb-4 shadow-md">
           M
         </div>
@@ -97,12 +95,12 @@ export default function RoleSelection() {
             <h3 className="font-bold text-slate-700 mb-6 text-sm tracking-tight">
               Select Your Role to Continue
             </h3>
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-2 gap-4 mb-8 text-left">
               {roles.map((role) => (
                 <button
                   key={role.id}
                   onClick={() => setSelectedRole(role.id)}
-                  className={`p-4 border rounded-2xl transition-all text-left shadow-sm cursor-pointer group ${
+                  className={`p-4 border rounded-2xl transition-all shadow-sm cursor-pointer group flex flex-col items-start ${
                     selectedRole === role.id
                       ? "border-brand-gold bg-brand-gold/10 ring-2 ring-brand-gold/20"
                       : "border-slate-200 bg-white hover:border-brand-gold/50"
@@ -117,7 +115,7 @@ export default function RoleSelection() {
                   >
                     {role.title}
                   </p>
-                  <p className="text-[10px] text-slate-400 font-medium">
+                  <p className="text-[10px] text-slate-400 font-medium leading-tight">
                     {role.desc}
                   </p>
                 </button>
@@ -127,7 +125,7 @@ export default function RoleSelection() {
             <button
               onClick={handleInitialClick}
               disabled={!isWebRole}
-              className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
+              className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 ${
                 isWebRole
                   ? "bg-brand-gold text-white hover:brightness-110"
                   : "bg-slate-200 text-slate-400 cursor-not-allowed"
@@ -138,7 +136,7 @@ export default function RoleSelection() {
             </button>
           </div>
         ) : (
-          /* --- PHASE 2: CREDENTIALS FORM --- */
+          /* --- PHASE 2: LOGIN --- */
           <form
             onSubmit={handleFinalLogin}
             className="animate-in fade-in zoom-in-95 duration-300 text-left"
@@ -167,7 +165,7 @@ export default function RoleSelection() {
                   type="text"
                   placeholder="User ID"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/5 transition-all text-sm"
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
                   onChange={(e) =>
                     setCredentials({ ...credentials, userId: e.target.value })
                   }
@@ -183,7 +181,7 @@ export default function RoleSelection() {
                   type="password"
                   placeholder="Password"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/5 transition-all text-sm"
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
                   onChange={(e) =>
                     setCredentials({ ...credentials, password: e.target.value })
                   }
@@ -193,17 +191,11 @@ export default function RoleSelection() {
 
             <button
               type="submit"
-              className="w-full mt-8 py-4 bg-brand-gold text-white rounded-xl font-bold shadow-lg shadow-brand-gold/20 hover:brightness-110 transition-all"
+              className="w-full mt-8 py-4 bg-brand-gold text-white rounded-xl font-bold shadow-lg shadow-brand-gold/20 hover:brightness-110 active:scale-95 transition-all"
             >
               Confirm Login
             </button>
           </form>
-        )}
-
-        {!isWebRole && !showCredentials && (
-          <p className="text-[9px] text-slate-400 mt-4 italic font-medium">
-            Portal access restricted for this role.
-          </p>
         )}
       </div>
     </div>

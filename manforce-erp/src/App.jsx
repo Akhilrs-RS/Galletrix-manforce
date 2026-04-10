@@ -19,9 +19,12 @@ import Clients from "./pages/core/Clients";
 import Deployment from "./pages/core/Deployment";
 import RolesAccess from "./pages/core/RolesAccess";
 
+// Accounts Page ✅ Added
+import AccountsDashboard from "./pages/accounts/AccountsDashboard";
+
 // Worker Specific Pages
-import WorkerProfile from "./pages/worker/WorkerProfile"; // ✅ Added
-import WorkerLeaves from "./pages/worker/WorkerLeaves"; // ✅ Added
+import WorkerProfile from "./pages/worker/WorkerProfile";
+import WorkerLeaves from "./pages/worker/WorkerLeaves";
 
 // Operations Pages
 import Attendance from "./pages/operations/Attendance";
@@ -40,6 +43,7 @@ export default function App() {
       <Routes>
         {/* ENTRY POINT */}
         <Route path="/" element={<RoleSelection />} />
+
         {/* --- ADMIN MODULE --- */}
         <Route
           path="/admin-dashboard"
@@ -56,6 +60,7 @@ export default function App() {
         <Route path="/documents" element={<Documents role="admin" />} />
         <Route path="/reports" element={<Reports role="admin" />} />
         <Route path="/roles" element={<RolesAccess role="admin" />} />
+
         {/* --- HR MODULE --- */}
         <Route path="/hr-dashboard" element={<HRDashboard role="hr" />} />
         <Route path="/hr-workers" element={<Workers role="hr" />} />
@@ -64,6 +69,7 @@ export default function App() {
         <Route path="/hr-leave-mgmt" element={<LeaveMgmt role="hr" />} />
         <Route path="/hr-documents" element={<Documents role="hr" />} />
         <Route path="/hr-reports" element={<Reports role="hr" />} />
+
         {/* --- SUPERVISOR MODULE --- */}
         <Route
           path="/sv-dashboard"
@@ -78,6 +84,7 @@ export default function App() {
           path="/sv-attendance"
           element={<Attendance role="supervisor" />}
         />
+
         {/* --- WORKER MODULE --- */}
         <Route
           path="/worker-dashboard"
@@ -86,13 +93,15 @@ export default function App() {
         <Route
           path="/worker-profile"
           element={<WorkerProfile role="worker" />}
-        />{" "}
-        {/* ✅ Added */}
+        />
+        <Route path="/worker-leaves" element={<WorkerLeaves role="worker" />} />
+
+        {/* --- ACCOUNTS MODULE ✅ Added --- */}
         <Route
-          path="/worker-leaves"
-          element={<WorkerLeaves role="worker" />}
-        />{" "}
-        {/* ✅ Added */}
+          path="/accounts-dashboard"
+          element={<AccountsDashboard role="accounts" />}
+        />
+
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

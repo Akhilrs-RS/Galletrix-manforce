@@ -1,73 +1,119 @@
-import React from "react";
+import React, { useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Users, Wallet, CalendarCheck, FileStack } from "lucide-react";
+import { Check, Loader2, Download } from "lucide-react";
 
-// 1. Accept the role prop (defaults to admin for safety)
 export default function Reports({ role = "admin" }) {
+  // --- 1. STATE MANAGEMENT ---
+  const [notification, setNotification] = useState(null);
+
   const reportCategories = [
     {
-      title: "Manpower Utilisation",
-      desc: "Detailed breakdown of worker deployment vs availability",
-      icon: Users,
-      color: "blue",
+      title: "Workforce Utilization",
+      desc: "Worker deployment rate and bench strength",
+      icon: "👷",
     },
     {
-      title: "Financial Summary",
-      desc: "Invoiced vs Collected reports for current fiscal year",
-      icon: Wallet,
-      color: "emerald",
+      title: "Payroll Summary",
+      desc: "Monthly breakdown by category",
+      icon: "💰",
     },
     {
-      title: "Attendance Analytics",
-      desc: "Overtime trends and absent patterns per site",
-      icon: CalendarCheck,
-      color: "amber",
+      title: "Client Revenue",
+      desc: "Revenue per client with YoY comparison",
+      icon: "📈",
     },
     {
-      title: "Compliance Audit",
-      desc: "Document expiry forecasts and legal status checks",
-      icon: FileStack,
-      color: "red",
+      title: "Attendance Report",
+      desc: "Daily, weekly, monthly analytics",
+      icon: "🕒",
+    },
+    {
+      title: "Leave Analysis",
+      desc: "Leave patterns, peak periods, balances",
+      icon: "📅",
+    },
+    {
+      title: "Document Expiry",
+      desc: "Upcoming visa and ID expiry alerts",
+      icon: "📁",
     },
   ];
 
+  // --- 2. ACTIONS ---
+  const handleExport = (title) => {
+    setNotification(`Generating ${title}...`);
+
+    // Simulate processing then success
+    setTimeout(() => {
+      setNotification(`${title} exported successfully`);
+      setTimeout(() => setNotification(null), 3000);
+    }, 1500);
+  };
+
   return (
-    // 2. Pass the dynamic role prop to the layout
     <DashboardLayout role={role}>
-      <div>
-        <div className="grid grid-cols-2 gap-6 pb-12">
+      <div className="space-y-6 relative">
+        {/* --- GLOBAL NOTIFICATION --- */}
+        {notification && (
+          <div className="fixed top-24 right-12 z-50 animate-in slide-in-from-right-4 duration-300">
+            <div className="bg-[#1e293b] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-700">
+              {notification.includes("Generating") ? (
+                <Loader2 size={18} className="animate-spin text-blue-400" />
+              ) : (
+                <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                  <Check size={18} className="text-emerald-400" />
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-bold">
+                  {notification.includes("Generating")
+                    ? "Processing..."
+                    : "Export Complete"}
+                </p>
+                <p className="text-[10px] text-slate-400 font-medium">
+                  {notification}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Header Action Bar */}
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-xl font-bold text-slate-800">Reports</h2>
+          <button
+            onClick={() => handleExport("Full System Report")}
+            className="bg-brand-gold text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:brightness-110 shadow-lg transition-all cursor-pointer"
+          >
+            Export Report
+          </button>
+        </div>
+
+        {/* --- REPORTS GRID (Matched to Screenshot) --- */}
+        <div className="grid grid-cols-3 gap-8">
           {reportCategories.map((cat, i) => (
             <div
               key={i}
-              className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm group hover:border-brand-gold hover:shadow-md transition-all cursor-pointer"
+              className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center text-center transition-all hover:shadow-xl hover:-translate-y-1 group"
             >
-              <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-colors ${
-                  cat.color === "blue"
-                    ? "bg-blue-50 text-blue-600"
-                    : cat.color === "emerald"
-                      ? "bg-emerald-50 text-emerald-600"
-                      : cat.color === "amber"
-                        ? "bg-amber-50 text-amber-600"
-                        : "bg-red-50 text-red-600"
-                } group-hover:bg-brand-gold group-hover:text-white`}
-              >
-                <cat.icon size={24} />
+              <div className="text-4xl mb-6 grayscale group-hover:grayscale-0 transition-all duration-300">
+                {cat.icon}
               </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-2">
+
+              <h3 className="text-base font-bold text-slate-800 mb-2">
                 {cat.title}
               </h3>
-              <p className="text-sm text-slate-400 font-medium leading-relaxed mb-6">
+
+              <p className="text-xs text-slate-400 font-medium leading-relaxed mb-8 max-w-[200px]">
                 {cat.desc}
               </p>
-              <div className="flex gap-3">
-                <button className="text-[11px] font-bold uppercase tracking-wider text-brand-gold border border-brand-gold/20 px-4 py-2 rounded-lg hover:bg-brand-gold hover:text-white transition-all cursor-pointer">
-                  Generate PDF
-                </button>
-                <button className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-4 py-2 rounded-lg hover:bg-slate-50 transition-all cursor-pointer">
-                  Excel
-                </button>
-              </div>
+
+              <button
+                onClick={() => handleExport(cat.title)}
+                className="text-[10px] font-bold text-slate-500 border border-slate-200 px-6 py-2 rounded-xl hover:bg-brand-navy hover:text-white hover:border-brand-navy transition-all cursor-pointer"
+              >
+                Export PDF
+              </button>
             </div>
           ))}
         </div>
