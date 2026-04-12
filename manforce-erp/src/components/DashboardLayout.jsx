@@ -17,8 +17,10 @@ import {
   BarChart3,
   UserCircle,
   Receipt,
+  Target,
 } from "lucide-react";
 
+// Optimized SidebarItem with tighter padding for no-scroll layout
 const SidebarItem = ({ icon: Icon, label, active, badge, onClick }) => (
   <div
     onClick={onClick}
@@ -51,11 +53,13 @@ export default function DashboardLayout({ children, role = "admin" }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isHR = role === "hr";
-  const isSupervisor = role === "supervisor";
-  const isWorker = role === "worker";
-  const isAccounts = role === "accounts"; // Defined explicitly
-  const isAdmin = role === "admin";
+  // Defensive role evaluation to prevent "White Screen" crashes during navigation
+  const currentRole = role || "admin";
+  const isHR = currentRole === "hr";
+  const isSupervisor = currentRole === "supervisor";
+  const isWorker = currentRole === "worker";
+  const isAccounts = currentRole === "accounts";
+  const isAdmin = currentRole === "admin";
 
   const getPageTitle = () => {
     const path = location.pathname
@@ -70,7 +74,8 @@ export default function DashboardLayout({ children, role = "admin" }) {
       return isWorker ? "My Profile" : "Workers";
     if (path === "roles") return "Roles & Access";
     if (path.includes("leaves")) return "My Leaves";
-    if (path.includes("financials")) return "Company Financials";
+    if (path.includes("financials")) return "Financial Overview";
+    if (path === "crm") return "Client CRM";
 
     return path.replace("-", " ") || "Home";
   };
@@ -78,6 +83,7 @@ export default function DashboardLayout({ children, role = "admin" }) {
   return (
     <div className="flex h-screen bg-[#FDFBF7] font-sans text-slate-900 overflow-hidden">
       <aside className="w-64 bg-brand-navy flex flex-col shadow-2xl shrink-0 z-20 h-full">
+        {/* Logo Section */}
         <div className="p-5 mb-1 flex items-center gap-3">
           <div className="bg-brand-gold p-1.5 rounded-lg text-white font-bold text-lg shadow-sm">
             M
@@ -93,7 +99,7 @@ export default function DashboardLayout({ children, role = "admin" }) {
         </div>
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {/* WORKER VIEW */}
+          {/* --- WORKER SIDEBAR --- */}
           {isWorker && (
             <>
               <p className="px-6 text-[9px] font-bold text-slate-500 uppercase mb-2 tracking-widest">
@@ -101,7 +107,7 @@ export default function DashboardLayout({ children, role = "admin" }) {
               </p>
               <SidebarItem
                 icon={LayoutDashboard}
-                label="My Dashboard"
+                label="Dashboard"
                 active={location.pathname.includes("dashboard")}
                 onClick={() => navigate("/worker-dashboard")}
               />
@@ -121,7 +127,7 @@ export default function DashboardLayout({ children, role = "admin" }) {
             </>
           )}
 
-          {/* ACCOUNTS VIEW */}
+          {/* --- ACCOUNTS SIDEBAR --- */}
           {isAccounts && (
             <>
               <p className="px-6 text-[9px] font-bold text-slate-500 uppercase mb-2 tracking-widest">
@@ -129,29 +135,29 @@ export default function DashboardLayout({ children, role = "admin" }) {
               </p>
               <SidebarItem
                 icon={LayoutDashboard}
-                label="Finance Overview"
+                label="Overview"
                 active={location.pathname.includes("dashboard")}
                 onClick={() => navigate("/accounts-dashboard")}
               />
               <SidebarItem
                 icon={Wallet}
                 label="Payroll Mgmt"
-                onClick={() => navigate("/accounts-payroll")}
+                onClick={() => navigate("/payroll")}
               />
               <SidebarItem
                 icon={Receipt}
-                label="Expense Tracker"
-                onClick={() => navigate("/accounts-expenses")}
+                label="Expenses"
+                onClick={() => navigate("/accounts-dashboard")}
               />
               <SidebarItem
                 icon={FileText}
                 label="Client Invoices"
-                onClick={() => navigate("/accounts-invoices")}
+                onClick={() => navigate("/invoices")}
               />
             </>
           )}
 
-          {/* ADMIN / HR / SV CORE */}
+          {/* --- ADMIN / HR / SUPERVISOR CORE --- */}
           {!isWorker && !isAccounts && (
             <>
               <p className="px-6 text-[9px] font-bold text-slate-500 uppercase mb-2 tracking-widest">
@@ -186,6 +192,17 @@ export default function DashboardLayout({ children, role = "admin" }) {
                   )
                 }
               />
+
+              {/* CRM - Restricted to Admin Only */}
+              {isAdmin && (
+                <SidebarItem
+                  icon={Target}
+                  label="Client CRM"
+                  active={location.pathname === "/crm"}
+                  onClick={() => navigate("/crm")}
+                />
+              )}
+
               {(isAdmin || isSupervisor) && (
                 <SidebarItem
                   icon={Truck}
@@ -222,6 +239,7 @@ export default function DashboardLayout({ children, role = "admin" }) {
                   )
                 }
               />
+
               {!isSupervisor && (
                 <>
                   <SidebarItem
@@ -261,6 +279,7 @@ export default function DashboardLayout({ children, role = "admin" }) {
                 </>
               )}
 
+              {/* --- COMPLIANCE SECTION RESTORED --- */}
               {!isSupervisor && (
                 <>
                   <p className="px-6 text-[9px] font-bold text-slate-500 uppercase mt-4 mb-2 tracking-widest">
@@ -301,8 +320,9 @@ export default function DashboardLayout({ children, role = "admin" }) {
           )}
         </nav>
 
+        {/* Profile Card Footer */}
         <div className="p-3 border-t border-slate-800 bg-brand-navy">
-          <div className="flex items-center gap-3 bg-[#1e293b] p-2 rounded-xl mb-2 border border-slate-700/50">
+          <div className="flex items-center gap-3 bg-[#1e293b] p-2 rounded-xl mb-2 border border-slate-700/50 shadow-inner">
             <div className="w-7 h-7 rounded-full bg-brand-gold flex items-center justify-center text-white font-bold text-[9px]">
               {isWorker
                 ? "WK"
@@ -314,7 +334,7 @@ export default function DashboardLayout({ children, role = "admin" }) {
                       ? "AC"
                       : "AD"}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 text-left">
               <p className="text-[11px] text-white font-bold leading-tight">
                 {isAdmin
                   ? "Admin"

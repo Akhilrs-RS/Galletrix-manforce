@@ -21,7 +21,7 @@ export default function RoleSelection() {
     {
       id: "admin",
       title: "Admin",
-      desc: "Full access",
+      desc: "Full access (ERP & CRM)", //  Updated to reflect CRM access
       icon: ShieldCheck,
       path: "/admin-dashboard",
     },
@@ -51,11 +51,10 @@ export default function RoleSelection() {
       title: "Accounts",
       desc: "Salary & Expenses",
       icon: Wallet,
-      path: "/accounts-dashboard", // MUST match the route in App.jsx
+      path: "/accounts-dashboard",
     },
   ];
 
-  // Logic to check if the role has a portal path
   const isWebRole = roles.find((r) => r.id === selectedRole)?.path !== null;
 
   const handleInitialClick = () => {
@@ -78,7 +77,6 @@ export default function RoleSelection() {
   return (
     <div className="min-h-screen bg-brand-navy flex items-center justify-center p-4 font-sans text-left">
       <div className="bg-[#FAF9F6] p-10 rounded-[2rem] shadow-2xl w-full max-w-md text-center transition-all duration-500">
-        {/* LOGO */}
         <div className="inline-block bg-brand-gold p-4 rounded-xl text-white font-bold text-2xl mb-4 shadow-md">
           M
         </div>
@@ -90,7 +88,6 @@ export default function RoleSelection() {
         </p>
 
         {!showCredentials ? (
-          /* --- PHASE 1: ROLE SELECTION --- */
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h3 className="font-bold text-slate-700 mb-6 text-sm tracking-tight">
               Select Your Role to Continue
@@ -136,7 +133,6 @@ export default function RoleSelection() {
             </button>
           </div>
         ) : (
-          /* --- PHASE 2: LOGIN --- */
           <form
             onSubmit={handleFinalLogin}
             className="animate-in fade-in zoom-in-95 duration-300 text-left"

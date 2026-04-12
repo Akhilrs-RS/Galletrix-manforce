@@ -18,8 +18,9 @@ import Workers from "./pages/core/Workers";
 import Clients from "./pages/core/Clients";
 import Deployment from "./pages/core/Deployment";
 import RolesAccess from "./pages/core/RolesAccess";
+import CRM from "./pages/core/CRM"; // ✅ Added CRM Import
 
-// Accounts Page ✅ Added
+// Accounts Page
 import AccountsDashboard from "./pages/accounts/AccountsDashboard";
 
 // Worker Specific Pages
@@ -43,7 +44,6 @@ export default function App() {
       <Routes>
         {/* ENTRY POINT */}
         <Route path="/" element={<RoleSelection />} />
-
         {/* --- ADMIN MODULE --- */}
         <Route
           path="/admin-dashboard"
@@ -60,7 +60,8 @@ export default function App() {
         <Route path="/documents" element={<Documents role="admin" />} />
         <Route path="/reports" element={<Reports role="admin" />} />
         <Route path="/roles" element={<RolesAccess role="admin" />} />
-
+        <Route path="/crm" element={<CRM role="admin" />} />{" "}
+        {/* ✅ Added CRM Route */}
         {/* --- HR MODULE --- */}
         <Route path="/hr-dashboard" element={<HRDashboard role="hr" />} />
         <Route path="/hr-workers" element={<Workers role="hr" />} />
@@ -69,7 +70,6 @@ export default function App() {
         <Route path="/hr-leave-mgmt" element={<LeaveMgmt role="hr" />} />
         <Route path="/hr-documents" element={<Documents role="hr" />} />
         <Route path="/hr-reports" element={<Reports role="hr" />} />
-
         {/* --- SUPERVISOR MODULE --- */}
         <Route
           path="/sv-dashboard"
@@ -84,7 +84,6 @@ export default function App() {
           path="/sv-attendance"
           element={<Attendance role="supervisor" />}
         />
-
         {/* --- WORKER MODULE --- */}
         <Route
           path="/worker-dashboard"
@@ -95,13 +94,11 @@ export default function App() {
           element={<WorkerProfile role="worker" />}
         />
         <Route path="/worker-leaves" element={<WorkerLeaves role="worker" />} />
-
-        {/* --- ACCOUNTS MODULE ✅ Added --- */}
+        {/* --- ACCOUNTS MODULE --- */}
         <Route
           path="/accounts-dashboard"
           element={<AccountsDashboard role="accounts" />}
         />
-
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
