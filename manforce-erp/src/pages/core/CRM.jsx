@@ -1,17 +1,30 @@
 import React, { useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Plus,
   Phone,
   Mail,
   MoreVertical,
-  Calendar,
   User,
-  Briefcase,
-  CheckCircle2,
-  Clock,
   X,
   ChevronDown,
+  GripVertical,
 } from "lucide-react";
 
 // --- Internal Component: Reusable Modal Window ---
@@ -37,6 +50,44 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   );
 };
 
+// --- Sortable Wrapper Component (Preserves Design) ---
+const SortableItem = ({ id, children, isTable = false }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: transform ? 99 : "auto",
+  };
+
+  if (isTable) {
+    return (
+      <tr
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className="hover:bg-slate-50 transition-colors cursor-grab active:cursor-grabbing"
+      >
+        {children}
+      </tr>
+    );
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute -left-2 top-4 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-slate-300 transition-opacity z-10"
+      >
+        <GripVertical size={16} />
+      </div>
+      {children}
+    </div>
+  );
+};
+
 export default function CRM({ role = "admin" }) {
   const [activeTab, setActiveTab] = useState("deals");
 
@@ -45,9 +96,18 @@ export default function CRM({ role = "admin" }) {
   const [isDealModalOpen, setDealModalOpen] = useState(false);
   const [isActivityModalOpen, setActivityModalOpen] = useState(false);
 
-  // --- DATA --- [cite: 10, 36, 64]
-  const contacts = [
+  // Drag Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // --- STATEFUL DATA (Required for rearranging) ---
+  const [contacts, setContacts] = useState([
     {
+      id: "c1",
       name: "John Smith",
       company: "Tech Corp",
       email: "john@company.com",
@@ -56,6 +116,7 @@ export default function CRM({ role = "admin" }) {
       status: "active",
     },
     {
+      id: "c2",
       name: "Sarah Johnson",
       company: "StartUp Inc",
       email: "sarah@startup.io",
@@ -64,6 +125,7 @@ export default function CRM({ role = "admin" }) {
       status: "lead",
     },
     {
+      id: "c3",
       name: "Mike Wilson",
       company: "Enterprise Ltd",
       email: "mike@enterprise.com",
@@ -71,7 +133,58 @@ export default function CRM({ role = "admin" }) {
       lastContact: "2025-11-08",
       status: "prospect",
     },
-  ];
+  ]);
+
+  const [deals, setDeals] = useState([
+    {
+      id: "d1",
+      title: "Annual Maintenance",
+      client: "Enterprise Ltd",
+      value: "₹45,000",
+      stage: "CONTACTED",
+    },
+    {
+      id: "d2",
+      title: "Hardware Package",
+      client: "StartUp Inc",
+      value: "₹85,000",
+      stage: "PROPOSAL",
+    },
+    {
+      id: "d3",
+      title: "Enterprise Software License",
+      client: "Tech Corp",
+      value: "₹150,000",
+      stage: "NEGOTIATION",
+    },
+  ]);
+
+  const [activities, setActivities] = useState([
+    {
+      id: "a1",
+      task: "Follow-up call",
+      contact: "John Smith",
+      date: "2025-11-12",
+      priority: "high",
+      status: "pending",
+    },
+    {
+      id: "a2",
+      task: "Product demo",
+      contact: "Sarah Johnson",
+      date: "2025-11-13",
+      priority: "medium",
+      status: "pending",
+    },
+    {
+      id: "a3",
+      task: "Proposal sent",
+      contact: "Mike Wilson",
+      date: "2025-11-11",
+      priority: "low",
+      status: "completed",
+    },
+  ]);
 
   const pipelineStages = [
     "LEAD",
@@ -80,52 +193,18 @@ export default function CRM({ role = "admin" }) {
     "NEGOTIATION",
     "WON",
     "LOST",
-  ]; // [cite: 34, 35, 45, 49, 53, 44]
-
-  const deals = [
-    {
-      title: "Annual Maintenance",
-      client: "Enterprise Ltd",
-      value: "₹45,000",
-      stage: "CONTACTED",
-    }, // [cite: 36, 37]
-    {
-      title: "Hardware Package",
-      client: "StartUp Inc",
-      value: "₹85,000",
-      stage: "PROPOSAL",
-    }, // [cite: 46, 47]
-    {
-      title: "Enterprise Software License",
-      client: "Tech Corp",
-      value: "₹150,000",
-      stage: "NEGOTIATION",
-    }, // [cite: 50, 51]
   ];
 
-  const activities = [
-    {
-      task: "Follow-up call",
-      contact: "John Smith",
-      date: "2025-11-12",
-      priority: "high",
-      status: "pending",
-    }, // [cite: 10, 11, 20, 21]
-    {
-      task: "Product demo",
-      contact: "Sarah Johnson",
-      date: "2025-11-13",
-      priority: "medium",
-      status: "pending",
-    }, // [cite: 12, 13, 22, 23]
-    {
-      task: "Proposal sent",
-      contact: "Mike Wilson",
-      date: "2025-11-11",
-      priority: "low",
-      status: "completed",
-    }, // [cite: 14, 15, 16, 24]
-  ];
+  const handleDragEnd = (event, setter) => {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      setter((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   const handleFormSubmit = (e, closeModal) => {
     e.preventDefault();
@@ -136,205 +215,230 @@ export default function CRM({ role = "admin" }) {
   return (
     <DashboardLayout role={role}>
       <div className="space-y-6">
-        {/* --- NAVIGATION TABS --- [cite: 6, 7, 8] */}
+        {/* --- NAVIGATION TABS --- */}
         <div className="flex gap-8 border-b border-slate-200 px-4">
           {["contacts", "deals", "activities"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-xs font-bold uppercase tracking-widest transition-all cursor-pointer ${
-                activeTab === tab
-                  ? "text-brand-gold border-b-2 border-brand-gold"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
+              className={`pb-3 text-xs font-bold uppercase tracking-widest transition-all cursor-pointer ${activeTab === tab ? "text-brand-gold border-b-2 border-brand-gold" : "text-slate-400 hover:text-slate-600"}`}
             >
               {tab}
             </button>
           ))}
         </div>
 
-        {/* --- SECTION: CONTACTS --- [cite: 63, 81] */}
-        {activeTab === "contacts" && (
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-50 flex justify-between items-center px-8 bg-slate-50/30">
-              <h3 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest">
-                Contacts List
-              </h3>
-              <button
-                onClick={() => setContactModalOpen(true)}
-                className="bg-brand-gold text-white text-[10px] font-bold px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"
-              >
-                <Plus size={14} /> Add Contact
-              </button>
-            </div>
-            <table className="w-full text-left">
-              <thead className="bg-[#FAF9F6] text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
-                <tr>
-                  <th className="px-8 py-4">Contact</th>
-                  <th className="px-6 py-4">Company</th>
-                  <th className="px-6 py-4">Email / Phone</th>
-                  <th className="px-6 py-4">Last Contact</th>
-                  <th className="px-8 py-4 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 text-[12px]">
-                {contacts.map((c, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-5 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white text-[10px] font-bold">
-                        {c.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </div>
-                      <span className="font-bold text-slate-700">{c.name}</span>
-                    </td>
-                    <td className="px-6 py-5 text-slate-500 font-medium">
-                      {c.company}
-                    </td>
-                    <td className="px-6 py-5">
-                      <p className="text-slate-600">{c.email}</p>
-                      <p className="text-[10px] text-slate-400">{c.phone}</p>
-                    </td>
-                    <td className="px-6 py-5 text-slate-400 font-mono">
-                      {c.lastContact}
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase ${c.status === "active" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"}`}
-                      >
-                        {c.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* --- SECTION: DEALS PIPELINE --- [cite: 33, 54] */}
-        {activeTab === "deals" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-black text-slate-800 tracking-tight">
-                Deals Pipeline
-              </h3>
-              <button
-                onClick={() => setDealModalOpen(true)}
-                className="bg-brand-gold text-white text-[11px] font-bold px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2 hover:brightness-105 transition-all cursor-pointer"
-              >
-                <Plus size={16} /> Add Deal
-              </button>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-6 custom-scrollbar min-h-[500px]">
-              {pipelineStages.map((stage) => (
-                <div
-                  key={stage}
-                  className="min-w-[280px] bg-slate-50/50 p-4 rounded-[1.5rem] border border-slate-100 flex flex-col gap-4"
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(e) => {
+            if (activeTab === "contacts") handleDragEnd(e, setContacts);
+            if (activeTab === "deals") handleDragEnd(e, setDeals);
+            if (activeTab === "activities") handleDragEnd(e, setActivities);
+          }}
+        >
+          {/* --- SECTION: CONTACTS --- */}
+          {activeTab === "contacts" && (
+            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-slate-50 flex justify-between items-center px-8 bg-slate-50/30">
+                <h3 className="text-[12px] font-bold text-slate-800 uppercase tracking-widest">
+                  Contacts List
+                </h3>
+                <button
+                  onClick={() => setContactModalOpen(true)}
+                  className="bg-brand-gold text-white text-[10px] font-bold px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"
                 >
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] px-2">
-                    {stage}
-                  </p>
-                  <div className="space-y-3">
-                    {deals
-                      .filter((d) => d.stage === stage)
-                      .map((deal, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow"
-                        >
-                          <h4 className="text-sm font-bold text-slate-800 leading-tight mb-1">
-                            {deal.title}
-                          </h4>
-                          <p className="text-[11px] text-slate-400 font-medium mb-3">
-                            {deal.client}
+                  <Plus size={14} /> Add Contact
+                </button>
+              </div>
+              <table className="w-full text-left">
+                <thead className="bg-[#FAF9F6] text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
+                  <tr>
+                    <th className="px-12 py-4">Contact</th>
+                    <th className="px-6 py-4">Company</th>
+                    <th className="px-6 py-4">Email / Phone</th>
+                    <th className="px-6 py-4">Last Contact</th>
+                    <th className="px-8 py-4 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-[12px]">
+                  <SortableContext
+                    items={contacts.map((c) => c.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {contacts.map((c) => (
+                      <SortableItem key={c.id} id={c.id} isTable={true}>
+                        <td className="px-12 py-5 flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white text-[10px] font-bold">
+                            {c.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </div>
+                          <span className="font-bold text-slate-700">
+                            {c.name}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-slate-500 font-medium">
+                          {c.company}
+                        </td>
+                        <td className="px-6 py-5">
+                          <p className="text-slate-600">{c.email}</p>
+                          <p className="text-[10px] text-slate-400">
+                            {c.phone}
                           </p>
-                          <div className="flex justify-between items-center mt-4">
-                            <span className="text-brand-navy font-black text-sm">
-                              {deal.value}
-                            </span>
-                            <select className="bg-slate-50 text-[10px] font-bold text-slate-500 py-1 px-2 rounded-lg border-none outline-none cursor-pointer">
-                              {pipelineStages.map((s) => (
-                                <option key={s} selected={s === stage}>
-                                  {s}
-                                </option>
-                              ))}
-                            </select>
+                        </td>
+                        <td className="px-6 py-5 text-slate-400 font-mono">
+                          {c.lastContact}
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase ${c.status === "active" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"}`}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+                      </SortableItem>
+                    ))}
+                  </SortableContext>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* --- SECTION: DEALS PIPELINE --- */}
+          {activeTab === "deals" && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-black text-slate-800 tracking-tight">
+                  Deals Pipeline
+                </h3>
+                <button
+                  onClick={() => setDealModalOpen(true)}
+                  className="bg-brand-gold text-white text-[11px] font-bold px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2 hover:brightness-105 transition-all cursor-pointer"
+                >
+                  <Plus size={16} /> Add Deal
+                </button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-6 custom-scrollbar min-h-[500px]">
+                {pipelineStages.map((stage) => (
+                  <div
+                    key={stage}
+                    className="min-w-[280px] bg-slate-50/50 p-4 rounded-[1.5rem] border border-slate-100 flex flex-col gap-4"
+                  >
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] px-2">
+                      {stage}
+                    </p>
+                    <div className="space-y-3">
+                      <SortableContext
+                        items={deals
+                          .filter((d) => d.stage === stage)
+                          .map((d) => d.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {deals
+                          .filter((d) => d.stage === stage)
+                          .map((deal) => (
+                            <SortableItem key={deal.id} id={deal.id}>
+                              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                                <h4 className="text-sm font-bold text-slate-800 leading-tight mb-1">
+                                  {deal.title}
+                                </h4>
+                                <p className="text-[11px] text-slate-400 font-medium mb-3">
+                                  {deal.client}
+                                </p>
+                                <div className="flex justify-between items-center mt-4">
+                                  <span className="text-brand-navy font-black text-sm">
+                                    {deal.value}
+                                  </span>
+                                  <select className="bg-slate-50 text-[10px] font-bold text-slate-500 py-1 px-2 rounded-lg border-none outline-none cursor-pointer">
+                                    {pipelineStages.map((s) => (
+                                      <option key={s} selected={s === stage}>
+                                        {s}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            </SortableItem>
+                          ))}
+                      </SortableContext>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- SECTION: ACTIVITIES --- */}
+          {activeTab === "activities" && (
+            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[400px]">
+              <div className="p-8 border-b border-slate-50 flex justify-between items-center px-8 bg-slate-50/30">
+                <h3 className="text-xl font-black text-slate-800 tracking-tight">
+                  Activities & Tasks
+                </h3>
+                <button
+                  onClick={() => setActivityModalOpen(true)}
+                  className="bg-brand-gold text-white text-[11px] font-bold px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus size={16} /> Add Activity
+                </button>
+              </div>
+              <div className="p-8 space-y-6">
+                <SortableContext
+                  items={activities.map((a) => a.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {activities.map((act) => (
+                    <SortableItem key={act.id} id={act.id}>
+                      <div className="flex items-center justify-between p-5 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
+                        <div className="flex items-center gap-5">
+                          <div
+                            className={`p-3 rounded-xl ${act.status === "completed" ? "bg-emerald-50 text-emerald-500" : "bg-amber-50 text-amber-500"}`}
+                          >
+                            {act.task.includes("call") ? (
+                              <Phone size={18} />
+                            ) : act.task.includes("demo") ? (
+                              <User size={18} />
+                            ) : (
+                              <Mail size={18} />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-800">
+                              {act.task}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 font-medium">
+                              {act.contact} •{" "}
+                              <span className="font-mono">{act.date}</span>
+                            </p>
                           </div>
                         </div>
-                      ))}
-                  </div>
-                </div>
-              ))}
+                        <div className="flex items-center gap-6">
+                          <span
+                            className={`text-[10px] font-bold uppercase tracking-widest ${act.priority === "high" ? "text-red-500" : act.priority === "medium" ? "text-amber-500" : "text-slate-400"}`}
+                          >
+                            {act.priority}
+                          </span>
+                          <span
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${act.status === "completed" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
+                          >
+                            {act.status}
+                          </span>
+                          <button className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
+                            <MoreVertical size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </SortableItem>
+                  ))}
+                </SortableContext>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </DndContext>
 
-        {/* --- SECTION: ACTIVITIES & TASKS --- [cite: 9, 19] */}
-        {activeTab === "activities" && (
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[400px]">
-            <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-              <h3 className="text-xl font-black text-slate-800 tracking-tight">
-                Activities & Tasks
-              </h3>
-              <button
-                onClick={() => setActivityModalOpen(true)}
-                className="bg-brand-gold text-white text-[11px] font-bold px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"
-              >
-                <Plus size={16} /> Add Activity
-              </button>
-            </div>
-            <div className="p-8 space-y-6">
-              {activities.map((act, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-5 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-5">
-                    <div
-                      className={`p-3 rounded-xl ${act.status === "completed" ? "bg-emerald-50 text-emerald-500" : "bg-amber-50 text-amber-500"}`}
-                    >
-                      {act.task.includes("call") ? (
-                        <Phone size={18} />
-                      ) : act.task.includes("demo") ? (
-                        <User size={18} />
-                      ) : (
-                        <Mail size={18} />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-800">
-                        {act.task}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 font-medium">
-                        {act.contact} •{" "}
-                        <span className="font-mono">{act.date}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <span
-                      className={`text-[10px] font-bold uppercase tracking-widest ${act.priority === "high" ? "text-red-500" : act.priority === "medium" ? "text-amber-500" : "text-slate-400"}`}
-                    >
-                      {act.priority}
-                    </span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${act.status === "completed" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
-                    >
-                      {act.status}
-                    </span>
-                    <button className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
-                      <MoreVertical size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* --- MODAL: ADD CONTACT --- [cite: 63, 64] */}
+        {/* --- MODALS (Unchanged design/logic) --- */}
         <Modal
           isOpen={isContactModalOpen}
           onClose={() => setContactModalOpen(false)}
@@ -408,7 +512,6 @@ export default function CRM({ role = "admin" }) {
           </form>
         </Modal>
 
-        {/* --- MODAL: ADD DEAL --- [cite: 33, 47] */}
         <Modal
           isOpen={isDealModalOpen}
           onClose={() => setDealModalOpen(false)}
@@ -492,7 +595,6 @@ export default function CRM({ role = "admin" }) {
           </form>
         </Modal>
 
-        {/* --- MODAL: ADD ACTIVITY --- [cite: 9, 10] */}
         <Modal
           isOpen={isActivityModalOpen}
           onClose={() => setActivityModalOpen(false)}
