@@ -12,7 +12,7 @@ import {
   Info,
 } from "lucide-react";
 
-export default function Workers({ role = "admin" }) {
+export default function Workers({ role }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);

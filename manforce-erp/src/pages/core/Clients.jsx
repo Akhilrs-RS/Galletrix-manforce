@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Search, Plus, X, ChevronDown } from "lucide-react";
 
-export default function Clients({ role = "admin" }) {
+export default function Clients({ role }) {
   // --- 1. STATE MANAGEMENT ---
   const [showAddModal, setShowAddModal] = useState(false);
   const [clientData, setClientData] = useState([

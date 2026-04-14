@@ -67,6 +67,7 @@ export default function RoleSelection() {
 
     if (credentials.userId && credentials.password) {
       if (roleObj && roleObj.path) {
+        localStorage.setItem("userRole", selectedRole); // Store role for persistence
         navigate(roleObj.path);
       }
     } else {

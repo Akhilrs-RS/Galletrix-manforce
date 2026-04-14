@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Plus, X, ChevronDown, Check, Loader2 } from "lucide-react";
 
-export default function Invoices() {
+export default function Invoices({ role }) {
   // --- 1. STATE MANAGEMENT ---
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -93,7 +93,7 @@ export default function Invoices() {
   };
 
   return (
-    <DashboardLayout role="admin">
+    <DashboardLayout role={role}>
       <div className="space-y-6 relative">
         {/* SUCCESS NOTIFICATION */}
         {notification && (

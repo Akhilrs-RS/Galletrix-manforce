@@ -26,7 +26,7 @@ const StatCard = ({ title, value, subtext, trend, isLoss }) => (
   </div>
 );
 
-export default function AdminDashboard({ role = "admin" }) {
+export default function AdminDashboard({ role }) {
   const navigate = useNavigate();
   const [financialView, setFinancialView] = useState("Revenue");
 

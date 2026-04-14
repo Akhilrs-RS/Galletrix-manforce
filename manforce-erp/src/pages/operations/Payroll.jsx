@@ -10,7 +10,7 @@ import {
   Calendar,
 } from "lucide-react";
 
-export default function Payroll({ role = "admin" }) {
+export default function Payroll({ role }) {
   // --- 1. STATE MANAGEMENT ---
   const [showOTModal, setShowOTModal] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);

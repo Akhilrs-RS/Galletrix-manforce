@@ -49,12 +49,14 @@ const SidebarItem = ({ icon: Icon, label, active, badge, onClick }) => (
   </div>
 );
 
-export default function DashboardLayout({ children, role = "admin" }) {
+export default function DashboardLayout({ children, role }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Defensive role evaluation to prevent "White Screen" crashes during navigation
-  const currentRole = role || "admin";
+  // Use localStorage for persistence across navigations
+  const savedRole = localStorage.getItem("userRole");
+  const currentRole = role || savedRole || "admin";
+  
   const isHR = currentRole === "hr";
   const isSupervisor = currentRole === "supervisor";
   const isWorker = currentRole === "worker";
@@ -136,22 +138,31 @@ export default function DashboardLayout({ children, role = "admin" }) {
               <SidebarItem
                 icon={LayoutDashboard}
                 label="Overview"
-                active={location.pathname.includes("dashboard")}
+                active={location.pathname.includes("accounts-dashboard")}
                 onClick={() => navigate("/accounts-dashboard")}
+              />
+              <SidebarItem
+                icon={Users}
+                label="Workers"
+                active={location.pathname === "/workers"}
+                onClick={() => navigate("/workers")}
+              />
+              <SidebarItem
+                icon={Briefcase}
+                label="Clients"
+                active={location.pathname === "/clients"}
+                onClick={() => navigate("/clients")}
               />
               <SidebarItem
                 icon={Wallet}
                 label="Payroll Mgmt"
+                active={location.pathname === "/payroll"}
                 onClick={() => navigate("/payroll")}
-              />
-              <SidebarItem
-                icon={Receipt}
-                label="Expenses"
-                onClick={() => navigate("/accounts-dashboard")}
               />
               <SidebarItem
                 icon={FileText}
                 label="Client Invoices"
+                active={location.pathname === "/invoices"}
                 onClick={() => navigate("/invoices")}
               />
             </>
@@ -166,7 +177,7 @@ export default function DashboardLayout({ children, role = "admin" }) {
               <SidebarItem
                 icon={LayoutDashboard}
                 label="Dashboard"
-                active={location.pathname.includes("dashboard")}
+                active={location.pathname.includes("admin-dashboard")}
                 onClick={() =>
                   navigate(
                     isHR
@@ -258,6 +269,12 @@ export default function DashboardLayout({ children, role = "admin" }) {
                         label="Payroll"
                         active={location.pathname === "/payroll"}
                         onClick={() => navigate("/payroll")}
+                      />
+                      <SidebarItem
+                        icon={Receipt}
+                        label="Accounts Section"
+                        active={location.pathname === "/accounts-dashboard"}
+                        onClick={() => navigate("/accounts-dashboard")}
                       />
                       <SidebarItem
                         icon={FileText}
