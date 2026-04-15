@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
   DndContext,
@@ -195,22 +195,75 @@ export default function CRM({ role = "admin" }) {
     "LOST",
   ];
 
-  const handleDragEnd = (event, setter) => {
+  // --- 2. EFFECTS ---
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [cRes, dRes, aRes] = await Promise.all([
+        api.get("/crm/contacts"),
+        api.get("/crm/deals"),
+        api.get("/crm/activities"),
+      ]);
+      setContacts(cRes.data);
+      setDeals(dRes.data);
+      setActivities(aRes.data);
+    } catch (err) {
+      console.error("CRM fetch error:", err);
+    }
+  };
+
+  const handleDragEnd = async (event, setter, type) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
+      // Find the deal being moved
+      const deal = deals.find((d) => d.id === active.id);
+
+      // Update UI
       setter((items) => {
         const oldIndex = items.findIndex((i) => i.id === active.id);
         const newIndex = items.findIndex((i) => i.id === over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
+
+      // Update API if it was a deal move
+      if (type === "deals") {
+        const newStage = deals.find((d) => d.id === over.id)?.stage || over.id; // Simplifying stage update logic
+        try {
+          await api.patch(`/crm/deals/${active.id}`, { stage: newStage });
+        } catch (err) {
+          console.error("Deal update error:", err);
+        }
+      }
     }
   };
 
-  const handleFormSubmit = (e, closeModal) => {
-    e.preventDefault();
-    alert("New entry saved successfully!");
-    closeModal(false);
-  };
+  const [newContact, setNewContact] = useState({
+    name: "",
+    company: "",
+    email: "",
+    phone: "",
+  });
+  const [newDeal, setNewDeal] = useState({
+    title: "",
+    value: "",
+    stage: "LEAD",
+    contact_id: null,
+  });
+  const [newActivity, setNewActivity] = useState({
+    task: "",
+    contact: "",
+    date: "",
+    priority: "Medium",
+    status: "pending",
+  });
+
+  // ... inside Modal components ...
+  // Example Modal usage for Contacts:
+  // <form onSubmit={(e) => handleFormSubmit(e, 'contacts', setContactModalOpen, newContact)}
+  // ... and update inputs to bind to newContact state
 
   return (
     <DashboardLayout role={role}>
@@ -232,9 +285,11 @@ export default function CRM({ role = "admin" }) {
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={(e) => {
-            if (activeTab === "contacts") handleDragEnd(e, setContacts);
-            if (activeTab === "deals") handleDragEnd(e, setDeals);
-            if (activeTab === "activities") handleDragEnd(e, setActivities);
+            if (activeTab === "contacts")
+              handleDragEnd(e, setContacts, "contacts");
+            if (activeTab === "deals") handleDragEnd(e, setDeals, "deals");
+            if (activeTab === "activities")
+              handleDragEnd(e, setActivities, "activities");
           }}
         >
           {/* --- SECTION: CONTACTS --- */}

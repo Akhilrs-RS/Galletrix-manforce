@@ -95,6 +95,7 @@ exports.up = function(knex) {
       table.increments('id').primary();
       table.integer('worker_id').unsigned().references('id').inTable('workers').onDelete('CASCADE');
       table.string('type'); // Visa Copy, Labor Card
+      table.string('number');
       table.date('expiry');
       table.string('status'); // Valid, Expiring Soon
       table.string('file_url');

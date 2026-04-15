@@ -61,8 +61,10 @@ export default function Clients({ role }) {
     }
   };
 
-  // Find max workers for the progress bar calculation
-  const maxWorkers = Math.max(...clientData.map((c) => c.workers));
+  // Find max workers for the progress bar calculation (safely)
+  const maxWorkers = clientData.length > 0 ? Math.max(...clientData.map((c) => c.workers || 0)) : 1;
+
+  const [selectedClient, setSelectedClient] = useState(null);
 
   return (
     <DashboardLayout role={role}>
@@ -138,7 +140,10 @@ export default function Clients({ role }) {
                     </span>
                   </td>
                   <td className="px-6 py-5 text-right">
-                    <button className="text-[10px] font-bold text-slate-400 border border-slate-200 px-4 py-1.5 rounded-lg hover:bg-brand-navy hover:text-white transition-all cursor-pointer">
+                    <button
+                      onClick={() => setSelectedClient(client)}
+                      className="text-[10px] font-bold text-slate-400 border border-slate-200 px-4 py-1.5 rounded-lg hover:bg-brand-navy hover:text-white transition-all cursor-pointer"
+                    >
                       View
                     </button>
                   </td>
@@ -147,6 +152,32 @@ export default function Clients({ role }) {
             </tbody>
           </table>
         </div>
+
+        {/* --- CLIENT DETAIL MODAL --- */}
+        {selectedClient && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg p-8 animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-slate-800">
+                  {selectedClient.name}
+                </h3>
+                <button
+                  onClick={() => setSelectedClient(null)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                >
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+              <div className="space-y-4 text-sm text-slate-600">
+                <p><span className="font-bold text-slate-800">Contact:</span> {selectedClient.contact}</p>
+                <p><span className="font-bold text-slate-800">Phone:</span> {selectedClient.phone}</p>
+                <p><span className="font-bold text-slate-800">Type:</span> {selectedClient.type}</p>
+                <p><span className="font-bold text-slate-800">Status:</span> {selectedClient.status}</p>
+                <p><span className="font-bold text-slate-800">Contract Till:</span> {selectedClient.till ? selectedClient.till.split("T")[0] : "N/A"}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* --- ANALYTICS SECTION (Added from Screenshot) --- */}
         <div className="grid grid-cols-2 gap-8 pb-10">
