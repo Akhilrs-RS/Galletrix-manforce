@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import { ChevronRight, ShieldCheck, Calendar, Filter } from "lucide-react";
@@ -26,9 +26,19 @@ const StatCard = ({ title, value, subtext, trend, isLoss }) => (
   </div>
 );
 
+import api from "../../utils/api";
+
 export default function AdminDashboard({ role }) {
   const navigate = useNavigate();
   const [financialView, setFinancialView] = useState("Revenue");
+  const [stats, setStats] = useState({
+    totalWorkers: 0,
+    deployedWorkers: 0,
+    activeClients: 0,
+    monthlyRevenue: 0,
+  });
+  const [recentWorkers, setRecentWorkers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const financialData = {
     Revenue: [
@@ -57,6 +67,40 @@ export default function AdminDashboard({ role }) {
     ],
   };
 
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const [workersRes, clientsRes] = await Promise.all([
+          api.get("/workers"),
+          api.get("/clients"),
+        ]);
+
+        const workers = workersRes.data;
+        const clients = clientsRes.data;
+
+        setStats({
+          totalWorkers: workers.length,
+          deployedWorkers: workers.filter((w) => w.status === "Deployed")
+            .length,
+          activeClients: clients.filter((c) => c.status === "Active").length,
+          monthlyRevenue: clients.reduce(
+            (acc, c) => acc + Number(c.revenue || 0),
+            0,
+          ),
+        });
+
+        setRecentWorkers(workers.slice(0, 5));
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <DashboardLayout role={role}>
       <div className="space-y-6">
@@ -64,17 +108,23 @@ export default function AdminDashboard({ role }) {
         <div className="grid grid-cols-6 gap-4">
           <StatCard
             title="Total Workers"
-            value="6"
-            subtext="+4 this month"
-            trend="12%"
+            value={stats.totalWorkers}
+            subtext="Active in system"
           />
-          <StatCard title="Deployed" value="3" subtext="Utilization: 50%" />
-          <StatCard title="Active Clients" value="4" subtext="135 workers" />
+          <StatCard
+            title="Deployed"
+            value={stats.deployedWorkers}
+            subtext={`Utilization: ${Math.round((stats.deployedWorkers / stats.totalWorkers) * 100) || 0}%`}
+          />
+          <StatCard
+            title="Active Clients"
+            value={stats.activeClients}
+            subtext="Contracted"
+          />
           <StatCard
             title="Monthly Revenue"
-            value="AED 427K"
+            value={`AED ${(stats.monthlyRevenue / 1000).toFixed(1)}K`}
             subtext="Gross income"
-            trend="12%"
           />
           {/* NEW CARDS */}
           <StatCard
@@ -264,46 +314,34 @@ export default function AdminDashboard({ role }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-[11px]">
-                <tr className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white font-bold text-[10px]">
-                      MA
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-800">
-                        Mohammed Al Rashidi
-                      </p>
-                      <p className="text-slate-400 text-[9px]">W001</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-medium text-slate-500">
-                    Electrician
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[10px] font-bold">
-                      Deployed
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white font-bold text-[10px]">
-                      RK
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-800">Ramesh Kumar</p>
-                      <p className="text-slate-400 text-[9px]">W002</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-medium text-slate-500">
-                    Plumber
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded text-[10px] font-bold">
-                      Available
-                    </span>
-                  </td>
-                </tr>
+                {recentWorkers.map((w, i) => (
+                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white font-bold text-[10px]">
+                        {w.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800">{w.name}</p>
+                        <p className="text-slate-400 text-[9px]">
+                          {w.worker_id}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-500">
+                      {w.category}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <span
+                        className={`px-2.5 py-1 rounded text-[10px] font-bold ${w.status === "Deployed" ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"}`}
+                      >
+                        {w.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

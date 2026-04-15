@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
+const auth = require('../middleware/auth');
+
 /**
  * @openapi
  * /api/attendance:
@@ -12,7 +14,7 @@ const db = require('../config/db');
  *       200:
  *         description: List of attendance
  */
-router.get('/', async (req, res, next) => {
+router.get('/', auth, async (req, res, next) => {
   try {
     const { date } = req.query;
     let query = db('attendance');

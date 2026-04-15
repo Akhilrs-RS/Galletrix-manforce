@@ -1,62 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Calendar as CalendarIcon, Check, X, ChevronDown } from "lucide-react";
 
-export default function Attendance({ role = "admin" }) {
+import api from "../../utils/api";
+
+export default function Attendance({ role }) {
   // --- 1. STATE MANAGEMENT ---
   const [selectedDate, setSelectedDate] = useState("2025-06-10");
   const [showMarkPopup, setShowMarkPopup] = useState(false);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const attendanceData = [
-    {
-      name: "Mohammed Al Rashidi",
-      id: "MA",
-      in: "07:02",
-      out: "18:05",
-      ot: "1.08 hrs",
-      status: "Present",
-    },
-    {
-      name: "Carlos Fernandez",
-      id: "CF",
-      in: "06:58",
-      out: "19:10",
-      ot: "2.17 hrs",
-      status: "Present",
-    },
-    {
-      name: "Ahmed Hassan",
-      id: "AH",
-      in: "07:30",
-      out: "17:55",
-      ot: "0.92 hrs",
-      status: "Present",
-    },
-    {
-      name: "Ramesh Kumar",
-      id: "RK",
-      in: "—",
-      out: "—",
-      ot: "—",
-      status: "Absent",
-    },
-    {
-      name: "Sanjay Patel",
-      id: "SP",
-      in: "—",
-      out: "—",
-      ot: "—",
-      status: "Leave",
-    },
-    {
-      name: "Bibek Thapa",
-      id: "BT",
-      in: "07:15",
-      out: "17:00",
-      ot: "—",
-      status: "Present",
-    },
-  ];
+  const fetchAttendance = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get(`/attendance?date=${selectedDate}`);
+      setAttendanceData(response.data);
+    } catch (err) {
+      console.error("Failed to fetch attendance:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAttendance();
+  }, [selectedDate]);
 
   // --- 2. ACTIONS ---
   const handleMarkToday = () => {
@@ -157,18 +126,20 @@ export default function Attendance({ role = "admin" }) {
                 >
                   <td className="px-8 py-5 flex items-center gap-4">
                     <div className="w-9 h-9 rounded-full bg-brand-navy flex items-center justify-center text-white font-bold text-[10px] shadow-sm">
-                      {row.id}
+                      {row.display_id || "—"}
                     </div>
-                    <span className="font-bold text-slate-700">{row.name}</span>
+                    <span className="font-bold text-slate-700">
+                      {row.worker_name}
+                    </span>
                   </td>
                   <td className="px-6 py-5 font-mono text-slate-500">
-                    {row.in}
+                    {row.check_in || "—"}
                   </td>
                   <td className="px-6 py-5 font-mono text-slate-500">
-                    {row.out}
+                    {row.check_out || "—"}
                   </td>
                   <td className="px-6 py-5 font-bold text-brand-gold">
-                    {row.ot}
+                    {row.ot_hours || 0} hrs
                   </td>
                   <td className="px-8 py-5 text-right">
                     <span

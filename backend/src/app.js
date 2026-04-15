@@ -97,12 +97,24 @@ const workerRoutes = require('./routes/workers');
 const clientRoutes = require('./routes/clients');
 const attendanceRoutes = require('./routes/attendance');
 const authRoutes = require('./routes/auth');
+const deploymentRoutes = require('./routes/deployments');
+const payrollRoutes = require('./routes/payroll');
+const invoiceRoutes = require('./routes/invoices');
+const leaveRequestRoutes = require('./routes/leave_requests');
+const documentRoutes = require('./routes/documents');
+const recruitmentRoutes = require('./routes/recruitment');
 
 // Use Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/workers', workerRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/attendance', attendanceRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/deployments', deploymentRoutes);
+app.use('/api/payroll', payrollRoutes);
+app.use('/api/invoices', invoiceRoutes);
+app.use('/api/leave-requests', leaveRequestRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/recruitment', recruitmentRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

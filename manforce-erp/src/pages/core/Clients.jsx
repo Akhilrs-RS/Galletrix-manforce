@@ -1,92 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Search, Plus, X, ChevronDown } from "lucide-react";
+
+import api from "../../utils/api";
 
 export default function Clients({ role }) {
   // --- 1. STATE MANAGEMENT ---
   const [showAddModal, setShowAddModal] = useState(false);
-  const [clientData, setClientData] = useState([
-    {
-      name: "Al Futtaim Group",
-      contact: "Omar Al Futtaim",
-      type: "Construction",
-      workers: 28,
-      rate: "3,200",
-      till: "2025-12-31",
-      status: "Active",
-      revenue: "89,600",
-    },
-    {
-      name: "Emaar Properties",
-      contact: "Sarah Johnson",
-      type: "Real Estate",
-      workers: 45,
-      rate: "3,500",
-      till: "2026-06-30",
-      status: "Active",
-      revenue: "157,500",
-    },
-    {
-      name: "DAMAC Properties",
-      contact: "Ali Rashid",
-      type: "Construction",
-      workers: 19,
-      rate: "3,100",
-      till: "2025-09-15",
-      status: "Active",
-      revenue: "58,900",
-    },
-    {
-      name: "DP World",
-      contact: "James Clarke",
-      type: "Logistics",
-      workers: 31,
-      rate: "2,900",
-      till: "2026-01-31",
-      status: "Active",
-      revenue: "89,900",
-    },
-    {
-      name: "Majid Al Futtaim",
-      contact: "Nadia Hassan",
-      type: "Retail",
-      workers: 12,
-      rate: "2,600",
-      till: "2025-08-20",
-      status: "Expired",
-      revenue: "31,200",
-    },
-  ]);
+  const [clientData, setClientData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchClients = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get("/clients");
+      setClientData(response.data);
+    } catch (err) {
+      console.error("Failed to fetch clients:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const [newClient, setNewClient] = useState({
     name: "",
     contact: "",
     phone: "",
-    industry: "Construction",
+    type: "Construction",
     rate: "",
     till: "",
   });
 
   // --- 2. ACTIONS ---
-  const handleSaveClient = (e) => {
+  const handleSaveClient = async (e) => {
     e.preventDefault();
-    const formattedClient = {
-      ...newClient,
-      workers: 0,
-      status: "Active",
-      revenue: "0",
-      type: newClient.industry,
-    };
-    setClientData([...clientData, formattedClient]);
-    setShowAddModal(false);
-    setNewClient({
-      name: "",
-      contact: "",
-      phone: "",
-      industry: "Construction",
-      rate: "",
-      till: "",
-    });
+    try {
+      await api.post("/clients", {
+        ...newClient,
+        status: "Active",
+        revenue: 0,
+        workers: 0,
+      });
+      setShowAddModal(false);
+      fetchClients();
+      setNewClient({
+        name: "",
+        contact: "",
+        phone: "",
+        type: "Construction",
+        rate: "",
+        till: "",
+      });
+    } catch (err) {
+      console.error("Failed to save client:", err);
+      alert("Failed to save client.");
+    }
   };
 
   // Find max workers for the progress bar calculation
@@ -156,7 +128,7 @@ export default function Clients({ role }) {
                     AED {client.rate}
                   </td>
                   <td className="px-6 py-5 text-slate-600 font-mono">
-                    {client.till}
+                    {client.till ? client.till.split("T")[0] : "N/A"}
                   </td>
                   <td className="px-6 py-5 text-center">
                     <span
@@ -308,11 +280,11 @@ export default function Clients({ role }) {
                       <div className="relative">
                         <select
                           className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold transition-all text-sm appearance-none cursor-pointer"
-                          value={newClient.industry}
+                          value={newClient.type}
                           onChange={(e) =>
                             setNewClient({
                               ...newClient,
-                              industry: e.target.value,
+                              type: e.target.value,
                             })
                           }
                         >

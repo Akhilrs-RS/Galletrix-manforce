@@ -11,11 +11,15 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
+import api from "../../utils/api";
+
 export default function RoleSelection() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState("admin");
   const [showCredentials, setShowCredentials] = useState(false);
   const [credentials, setCredentials] = useState({ userId: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const roles = [
     {
@@ -61,17 +65,39 @@ export default function RoleSelection() {
     if (isWebRole) setShowCredentials(true);
   };
 
-  const handleFinalLogin = (e) => {
+  const handleFinalLogin = async (e) => {
     e.preventDefault();
-    const roleObj = roles.find((r) => r.id === selectedRole);
+    setIsLoading(true);
+    setError("");
 
-    if (credentials.userId && credentials.password) {
+    try {
+      const response = await api.post("/auth/login", {
+        username: credentials.userId,
+        password: credentials.password,
+      });
+
+      const { token, user } = response.data;
+
+      // Verify if the logged-in user's role matches the selected role
+      if (user.role !== selectedRole) {
+        setError(`Unauthorized for role: ${selectedRole}`);
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("userRole", user.role);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      const roleObj = roles.find((r) => r.id === selectedRole);
       if (roleObj && roleObj.path) {
-        localStorage.setItem("userRole", selectedRole); // Store role for persistence
         navigate(roleObj.path);
       }
-    } else {
-      alert("Please enter both User ID and Password");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.response?.data?.message || "Login failed. Please check credentials.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -152,6 +178,12 @@ export default function RoleSelection() {
               {roles.find((r) => r.id === selectedRole)?.title}
             </p>
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold">
+                {error}
+              </div>
+            )}
+
             <div className="space-y-4">
               <div className="relative">
                 <UserIcon
@@ -162,7 +194,8 @@ export default function RoleSelection() {
                   type="text"
                   placeholder="User ID"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                  disabled={isLoading}
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm disabled:opacity-50"
                   onChange={(e) =>
                     setCredentials({ ...credentials, userId: e.target.value })
                   }
@@ -178,7 +211,8 @@ export default function RoleSelection() {
                   type="password"
                   placeholder="Password"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                  disabled={isLoading}
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm disabled:opacity-50"
                   onChange={(e) =>
                     setCredentials({ ...credentials, password: e.target.value })
                   }
@@ -188,9 +222,10 @@ export default function RoleSelection() {
 
             <button
               type="submit"
-              className="w-full mt-8 py-4 bg-brand-gold text-white rounded-xl font-bold shadow-lg shadow-brand-gold/20 hover:brightness-110 active:scale-95 transition-all"
+              disabled={isLoading}
+              className="w-full mt-8 py-4 bg-brand-gold text-white rounded-xl font-bold shadow-lg shadow-brand-gold/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Confirm Login
+              {isLoading ? "Logging in..." : "Confirm Login"}
             </button>
           </form>
         )}

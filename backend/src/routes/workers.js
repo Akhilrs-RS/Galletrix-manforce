@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const workerController = require('../controllers/workers');
 
+const auth = require('../middleware/auth');
+
 /**
  * @openapi
  * tags:
@@ -26,7 +28,7 @@ const workerController = require('../controllers/workers');
  *       200:
  *         description: List of workers
  */
-router.get('/', workerController.getWorkers);
+router.get('/', auth, workerController.getWorkers);
 
 /**
  * @openapi
@@ -45,7 +47,7 @@ router.get('/', workerController.getWorkers);
  *       404:
  *         description: Worker not found
  */
-router.get('/:id', workerController.getWorkerById);
+router.get('/:id', auth, workerController.getWorkerById);
 
 /**
  * @openapi
@@ -74,7 +76,7 @@ router.get('/:id', workerController.getWorkerById);
  *       201:
  *         description: Worker created
  */
-router.post('/', workerController.createWorker);
+router.post('/', auth, workerController.createWorker);
 
 /**
  * @openapi
@@ -91,7 +93,7 @@ router.post('/', workerController.createWorker);
  *       200:
  *         description: Worker updated
  */
-router.put('/:id', workerController.updateWorker);
+router.put('/:id', auth, workerController.updateWorker);
 
 /**
  * @openapi
@@ -108,6 +110,6 @@ router.put('/:id', workerController.updateWorker);
  *       200:
  *         description: Worker deleted
  */
-router.delete('/:id', workerController.deleteWorker);
+router.delete('/:id', auth, workerController.deleteWorker);
 
 module.exports = router;

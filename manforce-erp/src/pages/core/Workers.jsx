@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
   Search,
@@ -12,6 +12,8 @@ import {
   Info,
 } from "lucide-react";
 
+import api from "../../utils/api";
+
 export default function Workers({ role }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -20,99 +22,35 @@ export default function Workers({ role }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [typeFilter, setTypeFilter] = useState("All Labour");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [workers, setWorkers] = useState([
-    {
-      name: "Mohammed Al Rashidi",
-      id: "W001",
-      category: "Electrician",
-      type: "Own",
-      nationality: "Pakistani",
-      salary: "2,800",
-      status: "Deployed",
-      expiry: "2025-08-14",
-      emiratesId: "784-2020-1234567-1",
-      client: "Al Futtaim Group",
-      site: "Downtown Dubai",
-    },
-    {
-      name: "Ramesh Kumar",
-      id: "W002",
-      category: "Plumber",
-      type: "Own",
-      nationality: "Indian",
-      salary: "2,400",
-      status: "Available",
-      expiry: "2025-11-30",
-      emiratesId: "784-2020-5555666-2",
-      client: "Emaar",
-      site: "Business Bay",
-    },
-    {
-      name: "Ahmed Hassan",
-      id: "W005",
-      category: "Foreman",
-      type: "Own",
-      nationality: "Egyptian",
-      salary: "3,500",
-      status: "Deployed",
-      expiry: "2026-03-10",
-      emiratesId: "784-2020-1111222-3",
-      client: "DAMAC",
-      site: "Arjan",
-    },
-    {
-      name: "Carlos Fernandez",
-      id: "W003",
-      category: "Driver",
-      type: "Outsourced",
-      nationality: "Filipino",
-      salary: "2,200",
-      status: "Deployed",
-      expiry: "2024-12-20",
-      emiratesId: "784-2020-4444555-4",
-      client: "Sobha",
-      site: "Meydan",
-    },
-    {
-      name: "Sanjay Patel",
-      id: "W004",
-      category: "Mason",
-      type: "Outsourced",
-      nationality: "Indian",
-      salary: "2,100",
-      status: "On Leave",
-      expiry: "2025-09-15",
-      emiratesId: "784-2020-7777888-5",
-      client: "Dubai Mall",
-      site: "Downtown",
-    },
-    {
-      name: "Bibek Thapa",
-      id: "W006",
-      category: "Helper",
-      type: "Outsourced",
-      nationality: "Nepalese",
-      salary: "1,800",
-      status: "Available",
-      expiry: "2025-07-05",
-      emiratesId: "784-2020-9999000-6",
-      client: "Nshama",
-      site: "Town Square",
-    },
-  ]);
+  const [workers, setWorkers] = useState([]);
+
+  useEffect(() => {
+    fetchWorkers();
+  }, []);
+
+  const fetchWorkers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get("/workers");
+      setWorkers(response.data);
+    } catch (err) {
+      console.error("Failed to fetch workers:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [newWorker, setNewWorker] = useState({
     name: "",
-    id: "",
-    type: "Own Labour",
+    worker_id: "",
+    type: "Own",
     category: "Electrician",
     nationality: "Pakistani",
     salary: "",
     expiry: "",
-    emiratesId: "",
-    otHours: "",
-    otMultiplier: "1.25x (Standard UAE)",
+    emirates_id: "",
   });
 
   const filteredWorkers = useMemo(() => {
@@ -131,18 +69,29 @@ export default function Workers({ role }) {
     });
   }, [workers, searchQuery, statusFilter, typeFilter]);
 
-  const handleAddWorker = (e) => {
+  const handleAddWorker = async (e) => {
     e.preventDefault();
-    const formattedWorker = {
-      ...newWorker,
-      id: `W00${workers.length + 1}`,
-      type: newWorker.type === "Own Labour" ? "Own" : "Outsourced",
-      status: "Available",
-      expiry: newWorker.expiry || "2026-01-01",
-      salary: Number(newWorker.salary).toLocaleString(),
-    };
-    setWorkers([...workers, formattedWorker]);
-    setShowAddModal(false);
+    try {
+      await api.post("/workers", {
+        ...newWorker,
+        status: "Available",
+      });
+      setShowAddModal(false);
+      fetchWorkers();
+      setNewWorker({
+        name: "",
+        worker_id: "",
+        type: "Own",
+        category: "Electrician",
+        nationality: "Pakistani",
+        salary: "",
+        expiry: "",
+        emirates_id: "",
+      });
+    } catch (err) {
+      console.error("Failed to add worker:", err);
+      alert("Failed to add worker. Please check the data.");
+    }
   };
 
   return (
@@ -242,8 +191,11 @@ export default function Workers({ role }) {
                   />
                   <ModalInput
                     label="Worker ID"
-                    value={`W00${workers.length + 1}`}
-                    disabled
+                    value={newWorker.worker_id}
+                    onChange={(e) =>
+                      setNewWorker({ ...newWorker, worker_id: e.target.value })
+                    }
+                    placeholder="W00X"
                   />
                   <ModalSelect
                     label="Labour Type"
@@ -251,7 +203,7 @@ export default function Workers({ role }) {
                     onChange={(e) =>
                       setNewWorker({ ...newWorker, type: e.target.value })
                     }
-                    options={["Own Labour", "Outsourced"]}
+                    options={["Own", "Outsourced"]}
                   />
                   <ModalSelect
                     label="Category"
@@ -286,6 +238,7 @@ export default function Workers({ role }) {
                     </label>
                     <input
                       type="date"
+                      value={newWorker.expiry}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
                       onChange={(e) =>
                         setNewWorker({ ...newWorker, expiry: e.target.value })
@@ -294,9 +247,12 @@ export default function Workers({ role }) {
                   </div>
                   <ModalInput
                     label="Emirates ID"
-                    value={newWorker.emiratesId}
+                    value={newWorker.emirates_id}
                     onChange={(e) =>
-                      setNewWorker({ ...newWorker, emiratesId: e.target.value })
+                      setNewWorker({
+                        ...newWorker,
+                        emirates_id: e.target.value,
+                      })
                     }
                     placeholder="784-YYYY-XXXXXXX-X"
                   />
@@ -388,14 +344,24 @@ export default function Workers({ role }) {
                   <DetailBox label="Status" value={selectedWorker.status} />
                   <DetailBox
                     label="Visa Expiry"
-                    value={selectedWorker.expiry}
+                    value={
+                      selectedWorker.expiry
+                        ? selectedWorker.expiry.split("T")[0]
+                        : "N/A"
+                    }
                   />
                   <DetailBox
                     label="Emirates ID"
-                    value={selectedWorker.emiratesId}
+                    value={selectedWorker.emirates_id}
                   />
-                  <DetailBox label="Client" value={selectedWorker.client} />
-                  <DetailBox label="Site" value={selectedWorker.site} />
+                  <DetailBox
+                    label="Client"
+                    value={selectedWorker.client_name || "N/A"}
+                  />
+                  <DetailBox
+                    label="Site"
+                    value={selectedWorker.site || "N/A"}
+                  />
                 </div>
                 <div className="flex justify-end pt-4">
                   <button
@@ -456,7 +422,9 @@ function WorkerTableSection({ title, workers, icon: Icon, desc, onView }) {
                 </div>
                 <div className="flex flex-col">
                   <span className="font-bold text-slate-800">{w.name}</span>
-                  <span className="text-[9px] text-slate-400">{w.id}</span>
+                  <span className="text-[9px] text-slate-400">
+                    {w.worker_id}
+                  </span>
                 </div>
               </td>
               <td className="px-6 py-4 text-slate-500">{w.category}</td>
@@ -477,9 +445,9 @@ function WorkerTableSection({ title, workers, icon: Icon, desc, onView }) {
                 </span>
               </td>
               <td
-                className={`px-6 py-4 font-mono font-bold ${new Date(w.expiry) < new Date("2025-01-01") ? "text-red-500" : "text-slate-500"}`}
+                className={`px-6 py-4 font-mono font-bold ${new Date(w.expiry) < new Date() ? "text-red-500" : "text-slate-500"}`}
               >
-                {w.expiry}
+                {w.expiry ? w.expiry.split("T")[0] : "N/A"}
               </td>
               <td className="px-6 py-4 text-right">
                 <button

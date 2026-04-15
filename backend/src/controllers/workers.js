@@ -3,12 +3,14 @@ const db = require('../config/db');
 exports.getWorkers = async (req, res, next) => {
   try {
     const { type, status } = req.query;
-    let query = db('workers');
+    let query = db('workers')
+      .leftJoin('clients', 'workers.client_id', 'clients.id')
+      .select('workers.*', 'clients.name as client_name');
 
-    if (type) query = query.where({ type });
-    if (status) query = query.where({ status });
+    if (type) query = query.where('workers.type', type);
+    if (status) query = query.where('workers.status', status);
 
-    const workers = await query.select('*');
+    const workers = await query;
     res.json(workers);
   } catch (err) {
     next(err);
