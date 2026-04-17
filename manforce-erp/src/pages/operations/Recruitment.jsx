@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import {
   ChevronRight,
@@ -8,115 +8,72 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
+import api from "../../utils/api";
 
 export default function Recruitment({ role = "admin" }) {
-  // --- 1. STATE MANAGEMENT ---
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [candidates, setCandidates] = useState([]);
 
-  // Pipeline Stages and Colors
   const stages = ["Applied", "Screening", "Interview", "Offer", "Hired"];
+
   const stageColors = {
-    Applied: "bg-slate-500",
-    Screening: "bg-blue-500",
-    Interview: "bg-amber-500",
-    Offer: "bg-[#c5a447]", // brand-gold
+    Applied: "bg-blue-500",
+    Screening: "bg-yellow-500",
+    Interview: "bg-orange-500",
+    Offer: "bg-purple-500",
     Hired: "bg-emerald-500",
   };
 
-  // Candidates State
-  const [candidates, setCandidates] = useState([
-    {
-      id: 1,
-      name: "Deepak Chaudhary",
-      role: "Helper",
-      nat: "Nepalese",
-      exp: "1 yr",
-      date: "2025-06-07",
-      stage: "Applied",
-    },
-    {
-      id: 2,
-      name: "Pradeep Singh",
-      role: "Welder",
-      nat: "Indian",
-      exp: "5 yrs",
-      date: "2025-06-05",
-      stage: "Screening",
-    },
-    {
-      id: 3,
-      name: "Samuel Okafor",
-      role: "Mason",
-      nat: "Nigerian",
-      exp: "6 yrs",
-      date: "2025-06-08",
-      stage: "Screening",
-    },
-    {
-      id: 4,
-      name: "Jomar Reyes",
-      role: "Driver",
-      nat: "Filipino",
-      exp: "3 yrs",
-      date: "2025-06-03",
-      stage: "Interview",
-    },
-    {
-      id: 5,
-      name: "Rizwan Malik",
-      role: "Plumber",
-      nat: "Pakistani",
-      exp: "4 yrs",
-      date: "2025-06-01",
-      stage: "Interview",
-    },
-    {
-      id: 6,
-      name: "Mohammed Iqbal",
-      role: "Electrician",
-      nat: "Pakistani",
-      exp: "8 yrs",
-      date: "2025-05-28",
-      stage: "Offer",
-    },
-    {
-      id: 7,
-      name: "Ali Karimi",
-      role: "Foreman",
-      nat: "Iranian",
-      exp: "12 yrs",
-      date: "2025-05-20",
-      stage: "Hired",
-    },
-  ]);
+  // Form State
+  const [newCandidate, setNewCandidate] = useState({
+    candidate_name: "",
+    role: "Helper",
+    nationality: "Indian",
+    experience: "1 yr",
+    stage: "Applied",
+  });
 
-  // --- 2. LOGIC ---
+  useEffect(() => {
+    fetchCandidates();
+  }, []);
 
-  // Move candidate forward or backward in the pipeline
-  const moveCandidate = (id, direction) => {
-    setCandidates((prev) =>
-      prev.map((c) => {
-        if (c.id === id) {
-          const currentIndex = stages.indexOf(c.stage);
-          const nextIndex = currentIndex + direction;
-          if (nextIndex >= 0 && nextIndex < stages.length) {
-            return { ...c, stage: stages[nextIndex] };
-          }
-        }
-        return c;
-      }),
-    );
+  const fetchCandidates = async () => {
+    try {
+      const res = await api.get("/recruitment");
+      setCandidates(res.data);
+    } catch (err) {
+      console.error("Error fetching candidates:", err);
+    }
   };
 
-  const handleAddCandidate = (e) => {
+  const moveCandidate = async (id, direction) => {
+    const candidate = candidates.find((c) => c.id === id);
+    const currentIndex = stages.indexOf(candidate.stage);
+    const nextIndex = currentIndex + direction;
+    if (nextIndex >= 0 && nextIndex < stages.length) {
+      try {
+        await api.patch(`/recruitment/${id}`, { stage: stages[nextIndex] });
+        fetchCandidates();
+      } catch (err) {
+        console.error("Update error:", err);
+      }
+    }
+  };
+
+  const handleAddCandidate = async (e) => {
     e.preventDefault();
-    // In a real app, you'd collect data from form state here
-    setShowAddModal(false);
+    try {
+      await api.post("/recruitment", newCandidate);
+      setShowAddModal(false);
+      fetchCandidates();
+    } catch (err) {
+      console.error("Add error:", err);
+    }
   };
 
   const filteredCandidates = candidates.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    c.candidate_name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -185,14 +142,16 @@ export default function Recruitment({ role = "admin" }) {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white text-[10px] font-bold">
-                          {c.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {c.candidate_name
+                            ? c.candidate_name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                            : "?"}
                         </div>
                         <div>
                           <p className="text-[11px] font-bold text-slate-800 leading-tight">
-                            {c.name}
+                            {c.candidate_name}
                           </p>
                           <p className="text-[10px] text-slate-400 font-medium">
                             {c.role}
@@ -267,21 +226,75 @@ export default function Recruitment({ role = "admin" }) {
                 className="p-8 space-y-5 text-left"
               >
                 <div className="grid grid-cols-2 gap-5">
-                  <ModalInput label="Full Name" placeholder="Candidate Name" />
-                  <ModalSelect
-                    label="Position"
-                    options={[
-                      "Electrician",
-                      "Foreman",
-                      "Helper",
-                      "Mason",
-                      "Driver",
-                    ]}
-                  />
-                  <ModalInput label="Nationality" placeholder="Indian" />
-                  <ModalInput label="Experience" placeholder="5 years" />
-                  <div className="col-span-2">
-                    <ModalSelect label="Stage" options={stages} />
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                      Full Name
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm"
+                      onChange={(e) =>
+                        setNewCandidate({
+                          ...newCandidate,
+                          candidate_name: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                      Position
+                    </label>
+                    <select
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                      onChange={(e) =>
+                        setNewCandidate({
+                          ...newCandidate,
+                          role: e.target.value,
+                        })
+                      }
+                    >
+                      {[
+                        "Electrician",
+                        "Foreman",
+                        "Helper",
+                        "Mason",
+                        "Driver",
+                      ].map((o) => (
+                        <option key={o}>{o}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                      Nationality
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                      onChange={(e) =>
+                        setNewCandidate({
+                          ...newCandidate,
+                          nationality: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                      Experience
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                      onChange={(e) =>
+                        setNewCandidate({
+                          ...newCandidate,
+                          experience: e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
 

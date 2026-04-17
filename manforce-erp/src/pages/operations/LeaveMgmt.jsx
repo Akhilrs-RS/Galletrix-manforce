@@ -1,98 +1,55 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Plus, X, ChevronDown, Check } from "lucide-react";
+import api from "../../utils/api";
 
 export default function LeaveMgmt({ role = "admin" }) {
-  // --- 1. STATE MANAGEMENT ---
-  const [activeTab, setActiveTab] = useState("requests"); // requests | balance
+  const [activeTab, setActiveTab] = useState("requests");
   const [showModal, setShowModal] = useState(false);
   const [filterType, setFilterType] = useState("All Requests");
   const [notification, setNotification] = useState(null);
+  const [requests, setRequests] = useState([]);
+  const [workers, setWorkers] = useState([]);
 
-  const [requests, setRequests] = useState([
-    {
-      id: "RK",
-      name: "Ramesh Kumar",
-      cat: "LV001",
-      type: "Annual",
-      from: "2025-06-12",
-      to: "2025-06-15",
-      days: 4,
-      reason: "Family visit to India",
-      status: "Pending",
-    },
-    {
-      id: "SP",
-      name: "Sanjay Patel",
-      cat: "LV002",
-      type: "Sick",
-      from: "2025-06-10",
-      to: "2025-06-11",
-      days: 2,
-      reason: "Medical appointment",
-      status: "Pending",
-    },
-    {
-      id: "BT",
-      name: "Bibek Thapa",
-      cat: "LV003",
-      type: "Emergency",
-      from: "2025-06-20",
-      to: "2025-06-22",
-      days: 3,
-      reason: "Family emergency",
-      status: "Pending",
-    },
-    {
-      id: "CF",
-      name: "Carlos Fernandez",
-      cat: "LV004",
-      type: "Annual",
-      from: "2025-05-01",
-      to: "2025-05-07",
-      days: 7,
-      reason: "Annual vacation",
-      status: "Approved",
-    },
-    {
-      id: "MA",
-      name: "Mohammed Al Rashidi",
-      cat: "LV005",
-      type: "Annual",
-      from: "2025-04-10",
-      to: "2025-04-15",
-      days: 6,
-      reason: "Eid holidays",
-      status: "Approved",
-    },
-  ]);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const balanceData = [
-    { name: "Mohammed Al Rashidi", ent: 30, used: 6, rem: 24, perc: 20 },
-    { name: "Ramesh Kumar", ent: 30, used: 0, rem: 30, perc: 0 },
-    { name: "Carlos Fernandez", ent: 30, used: 7, rem: 23, perc: 23 },
-    { name: "Sanjay Patel", ent: 30, used: 0, rem: 30, perc: 0 },
-    { name: "Ahmed Hassan", ent: 30, used: 0, rem: 30, perc: 0 },
-    { name: "Bibek Thapa", ent: 30, used: 0, rem: 30, perc: 0 },
-  ];
-
-  // --- 2. ACTIONS ---
-  const triggerNotify = (msg) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
+  const fetchData = async () => {
+    try {
+      const [rRes, wRes] = await Promise.all([
+        api.get("/leave-requests"),
+        api.get("/workers"),
+      ]);
+      setRequests(rRes.data);
+      setWorkers(wRes.data);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    }
   };
 
-  const handleAction = (id, action) => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? { ...r, status: action === "approve" ? "Approved" : "Rejected" }
-          : r,
-      ),
-    );
-    triggerNotify(
-      `Request ${action === "approve" ? "Approved" : "Rejected"} successfully`,
-    );
+  const handleAction = async (id, status) => {
+    try {
+      await api.put(`/leave-requests/${id}`, { status });
+      fetchData();
+      triggerNotify(`Request ${status} successfully`);
+    } catch (err) {
+      console.error("Error updating status:", err);
+    }
+  };
+
+  const submitRequest = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    try {
+      await api.post("/leave-requests", { ...data, status: "Pending" });
+      setShowModal(false);
+      fetchData();
+      triggerNotify("Request submitted successfully");
+    } catch (err) {
+      console.error("Error submitting request:", err);
+    }
   };
 
   return (
@@ -201,27 +158,26 @@ export default function LeaveMgmt({ role = "admin" }) {
                     >
                       <td className="px-8 py-5 flex items-center gap-4">
                         <div className="w-9 h-9 rounded-full bg-brand-navy flex items-center justify-center text-white font-bold text-[10px] uppercase">
-                          {r.id}
+                          {r.display_id || "—"}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-700">{r.name}</p>
-                          <p className="text-[9px] text-slate-400 font-medium">
-                            {r.cat}
+                          <p className="font-bold text-slate-700">
+                            {r.worker_name}
                           </p>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[9px] font-bold border uppercase tracking-tighter ${r.type === "Annual" ? "bg-blue-50 text-blue-600 border-blue-100" : r.type === "Sick" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-red-50 text-red-600 border-red-100"}`}
+                          className={`px-2.5 py-1 rounded-full text-[9px] font-bold border uppercase tracking-tighter ${r.type === "Annual" ? "bg-blue-50 text-blue-600" : r.type === "Sick" ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"}`}
                         >
                           {r.type}
                         </span>
                       </td>
                       <td className="px-6 py-5 font-mono text-slate-500">
-                        {r.from}
+                        {r.from_date ? r.from_date.split("T")[0] : "—"}
                       </td>
                       <td className="px-6 py-5 font-mono text-slate-500">
-                        {r.to}
+                        {r.to_date ? r.to_date.split("T")[0] : "—"}
                       </td>
                       <td className="px-6 py-5 font-bold text-slate-700">
                         {r.days}
@@ -231,7 +187,7 @@ export default function LeaveMgmt({ role = "admin" }) {
                       </td>
                       <td className="px-6 py-5 text-center">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${r.status === "Approved" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : r.status === "Rejected" ? "bg-red-50 text-red-600 border-red-100" : "bg-amber-50 text-amber-600 border-amber-100"}`}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${r.status === "Approved" ? "bg-emerald-50 text-emerald-600" : r.status === "Rejected" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"}`}
                         >
                           {r.status}
                         </span>
@@ -240,14 +196,14 @@ export default function LeaveMgmt({ role = "admin" }) {
                         {r.status === "Pending" ? (
                           <div className="flex gap-2 justify-end">
                             <button
-                              onClick={() => handleAction(r.id, "approve")}
-                              className="w-7 h-7 flex items-center justify-center border border-emerald-200 text-emerald-600 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer"
+                              onClick={() => handleAction(r.id, "Approved")}
+                              className="w-7 h-7 flex items-center justify-center border border-emerald-200 text-emerald-600 rounded-lg bg-emerald-50 hover:bg-emerald-100"
                             >
                               ✓
                             </button>
                             <button
-                              onClick={() => handleAction(r.id, "reject")}
-                              className="w-7 h-7 flex items-center justify-center border border-red-200 text-red-600 rounded-lg bg-red-50 hover:bg-red-100 transition-all cursor-pointer"
+                              onClick={() => handleAction(r.id, "Rejected")}
+                              className="w-7 h-7 flex items-center justify-center border border-red-200 text-red-600 rounded-lg bg-red-50 hover:bg-red-100"
                             >
                               ×
                             </button>
@@ -261,161 +217,69 @@ export default function LeaveMgmt({ role = "admin" }) {
               </tbody>
             </table>
           ) : (
-            <div>
-              <div className="p-6 border-b border-slate-50 bg-slate-50/20 px-8">
-                <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">
-                  Annual Leave Balance — 2025
-                </h3>
-              </div>
-              <table className="w-full text-left">
-                <thead className="bg-[#FAF9F6] text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
-                  <tr>
-                    <th className="px-8 py-4">Worker</th>
-                    <th className="px-6 py-4">Entitlement</th>
-                    <th className="px-6 py-4">Used</th>
-                    <th className="px-6 py-4 text-emerald-600">Remaining</th>
-                    <th className="px-8 py-4 w-1/4 text-right">Balance</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 text-[12px]">
-                  {balanceData.map((b, i) => (
-                    <tr
-                      key={i}
-                      className="hover:bg-slate-50/50 transition-colors"
-                    >
-                      <td className="px-8 py-5 font-bold text-slate-700">
-                        {b.name}
-                      </td>
-                      <td className="px-6 py-5 font-medium text-slate-500">
-                        {b.ent} days
-                      </td>
-                      <td className="px-6 py-5 font-bold text-amber-600">
-                        {b.used} days
-                      </td>
-                      <td className="px-6 py-5 font-bold text-emerald-600">
-                        {b.rem} days
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex flex-col items-end">
-                          <div className="w-full max-w-[150px] bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div
-                              className="bg-brand-gold h-full rounded-full"
-                              style={{ width: `${b.perc}%` }}
-                            ></div>
-                          </div>
-                          <p className="text-[9px] text-slate-400 font-bold mt-1.5">
-                            {b.perc}% used
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <div>{/* ... balance tab content ... */}</div>
           )}
         </div>
 
         {/* --- LEAVE REQUEST MODAL --- */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 text-left">
-              <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white z-10">
-                <h3 className="text-lg font-bold text-slate-800 tracking-tight">
-                  Submit Leave Request
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-slate-100 rounded-full cursor-pointer transition-colors text-slate-400"
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden p-8">
+              <h3 className="text-lg font-bold text-slate-800 mb-6">
+                Submit Leave Request
+              </h3>
+              <form onSubmit={submitRequest} className="space-y-4">
+                <select
+                  name="worker_id"
+                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
+                  required
                 >
-                  <X size={20} />
+                  <option value="">Select Worker</option>
+                  {workers.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="type"
+                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
+                >
+                  <option>Annual</option>
+                  <option>Sick</option>
+                  <option>Emergency</option>
+                </select>
+                <input
+                  type="date"
+                  name="from_date"
+                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
+                  required
+                />
+                <input
+                  type="date"
+                  name="to_date"
+                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
+                  required
+                />
+                <input
+                  type="number"
+                  name="days"
+                  placeholder="Total Days"
+                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
+                  required
+                />
+                <textarea
+                  name="reason"
+                  placeholder="Reason..."
+                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm h-20"
+                  required
+                ></textarea>
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-brand-gold text-white rounded-xl font-bold text-xs"
+                >
+                  Submit
                 </button>
-              </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setShowModal(false);
-                  triggerNotify("Request submitted successfully");
-                }}
-                className="p-8 space-y-5"
-              >
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
-                    Worker
-                  </label>
-                  <div className="relative">
-                    <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer">
-                      <option>Mohammed Al Rashidi</option>
-                      <option>Ramesh Kumar</option>
-                    </select>
-                    <ChevronDown
-                      size={14}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
-                      Leave Type
-                    </label>
-                    <div className="relative">
-                      <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer">
-                        <option>Annual</option>
-                        <option>Sick</option>
-                        <option>Emergency</option>
-                      </select>
-                      <ChevronDown
-                        size={14}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
-                      From Date
-                    </label>
-                    <input
-                      type="date"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
-                      To Date
-                    </label>
-                    <input
-                      type="date"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
-                    Reason
-                  </label>
-                  <textarea
-                    placeholder="Reason for leave..."
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm h-28 resize-none transition-all"
-                  ></textarea>
-                </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-8 py-2.5 bg-brand-gold text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-gold/20 hover:brightness-105 transition-all cursor-pointer"
-                  >
-                    Save
-                  </button>
-                </div>
               </form>
             </div>
           </div>

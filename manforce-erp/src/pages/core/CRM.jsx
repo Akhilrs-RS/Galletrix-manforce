@@ -326,9 +326,11 @@ export default function CRM({ role = "admin" }) {
                         <td className="px-12 py-5 flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white text-[10px] font-bold">
                             {c.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                              ? c.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                              : "?"}
                           </div>
                           <span className="font-bold text-slate-700">
                             {c.name}
@@ -344,13 +346,13 @@ export default function CRM({ role = "admin" }) {
                           </p>
                         </td>
                         <td className="px-6 py-5 text-slate-400 font-mono">
-                          {c.lastContact}
+                          {c.last_contact ? new Date(c.last_contact).toLocaleDateString() : "N/A"}
                         </td>
                         <td className="px-8 py-5 text-right">
                           <span
                             className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase ${c.status === "active" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"}`}
                           >
-                            {c.status}
+                            {c.status || "active"}
                           </span>
                         </td>
                       </SortableItem>
@@ -500,7 +502,7 @@ export default function CRM({ role = "admin" }) {
           title="Add New Contact"
         >
           <form
-            onSubmit={(e) => handleFormSubmit(e, setContactModalOpen)}
+            onSubmit={(e) => handleFormSubmit(e, 'contacts', setContactModalOpen, newContact)}
             className="space-y-5"
           >
             <div className="space-y-1.5">
@@ -512,6 +514,8 @@ export default function CRM({ role = "admin" }) {
                 type="text"
                 placeholder="e.g. John Smith"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                value={newContact.name}
+                onChange={(e) => setNewContact({...newContact, name: e.target.value})}
               />
             </div>
             <div className="space-y-1.5">
@@ -523,6 +527,8 @@ export default function CRM({ role = "admin" }) {
                 type="text"
                 placeholder="e.g. Tech Corp"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                value={newContact.company}
+                onChange={(e) => setNewContact({...newContact, company: e.target.value})}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -535,6 +541,8 @@ export default function CRM({ role = "admin" }) {
                   type="email"
                   placeholder="john@company.com"
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                  value={newContact.email}
+                  onChange={(e) => setNewContact({...newContact, email: e.target.value})}
                 />
               </div>
               <div className="space-y-1.5">
@@ -546,6 +554,8 @@ export default function CRM({ role = "admin" }) {
                   type="text"
                   placeholder="+91..."
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                  value={newContact.phone}
+                  onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
                 />
               </div>
             </div>

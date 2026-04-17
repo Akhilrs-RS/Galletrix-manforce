@@ -7,48 +7,36 @@ const auth = require('../middleware/auth');
  * @openapi
  * /api/recruitment:
  *   get:
- *     summary: Get all recruitment records
+ *     summary: Get all recruitment candidates
  *     tags: [Recruitment]
  *     responses:
  *       200:
- *         description: List of recruitment records
+ *         description: List of candidates
  */
-router.get('/', auth, recruitmentController.getRecruitment);
+router.get('/', auth, recruitmentController.getAll);
 
 /**
  * @openapi
  * /api/recruitment:
  *   post:
- *     summary: Create a new recruitment record
+ *     summary: Create a new candidate
  *     tags: [Recruitment]
  *     responses:
  *       201:
- *         description: Recruitment record created
+ *         description: Candidate created
  */
-router.post('/', auth, recruitmentController.createRecruitment);
+router.post('/', auth, recruitmentController.create);
 
 /**
  * @openapi
  * /api/recruitment/{id}:
- *   put:
- *     summary: Update a recruitment record
+ *   patch:
+ *     summary: Update candidate stage
  *     tags: [Recruitment]
  *     responses:
  *       200:
- *         description: Recruitment record updated
+ *         description: Candidate updated
  */
-router.put('/:id', auth, recruitmentController.updateRecruitment);
-
-/**
- * @openapi
- * /api/recruitment/{id}:
- *   delete:
- *     summary: Delete a recruitment record
- *     tags: [Recruitment]
- *     responses:
- *       200:
- *         description: Recruitment record deleted
- */
-router.delete('/:id', auth, recruitmentController.deleteRecruitment);
+router.patch('/:id', auth, recruitmentController.update);
 
 module.exports = router;
