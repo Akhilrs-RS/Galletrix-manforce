@@ -5,33 +5,60 @@ import { Calendar as CalendarIcon, Check, X, ChevronDown } from "lucide-react";
 import api from "../../utils/api";
 
 export default function Attendance({ role }) {
-  // --- 1. STATE MANAGEMENT ---
-  const [selectedDate, setSelectedDate] = useState("2025-06-10");
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [showMarkPopup, setShowMarkPopup] = useState(false);
   const [attendanceData, setAttendanceData] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchAttendance = async () => {
+  // Modal form state
+  const [markData, setMarkData] = useState({
+    worker_id: "",
+    status: "Present",
+    check_in: "",
+    check_out: "",
+    ot_hours: 0,
+  });
+
+  const fetchData = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/attendance?date=${selectedDate}`);
-      setAttendanceData(response.data);
+      const [attRes, workRes] = await Promise.all([
+        api.get(`/attendance?date=${selectedDate}`),
+        api.get("/workers"),
+      ]);
+      setAttendanceData(attRes.data);
+      setWorkers(workRes.data);
     } catch (err) {
-      console.error("Failed to fetch attendance:", err);
+      console.error("Failed to fetch data:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAttendance();
+    fetchData();
   }, [selectedDate]);
+
+  const handleMarkAttendance = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post("/attendance", { ...markData, date: selectedDate });
+      setShowMarkPopup(true);
+      fetchData();
+      setTimeout(() => setShowMarkPopup(false), 3000);
+    } catch (err) {
+      console.error("Failed to mark attendance:", err);
+    }
+  };
 
   // --- 2. ACTIONS ---
   const handleMarkToday = () => {
     setShowMarkPopup(true);
     // Auto-hide popup after 3 seconds
-    setTimeout(() => setShowMarkPopup(false), 3000);
+    setTimeout(() => setShowMarkPopup(false), 30000);
   };
 
   // Function to format display date (e.g., June 10, 2025)
@@ -43,35 +70,101 @@ export default function Attendance({ role }) {
   return (
     <DashboardLayout role={role}>
       <div className="space-y-6 relative">
-        {/* --- SUCCESS NOTIFICATION POPUP --- */}
+        {/* --- MARK ATTENDANCE MODAL --- */}
         {showMarkPopup && (
-          <div className="fixed top-24 right-12 z-50 animate-in slide-in-from-right-4 duration-300">
-            <div className="bg-[#1e293b] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-700">
-              <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                <Check size={18} className="text-emerald-400" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg p-8 animate-in zoom-in-95 duration-200 text-left">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold">Mark Attendance</h3>
+                <button onClick={() => setShowMarkPopup(false)}>
+                  <X size={20} />
+                </button>
               </div>
-              <div>
-                <p className="text-sm font-bold">Attendance Marked</p>
-                <p className="text-[10px] text-slate-400 font-medium">
-                  Daily records updated for {selectedDate}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowMarkPopup(false)}
-                className="ml-2 text-slate-500 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={14} />
-              </button>
+              <form onSubmit={handleMarkAttendance} className="space-y-4">
+                <select
+                  className="w-full p-3 border rounded-xl text-sm"
+                  onChange={(e) =>
+                    setMarkData({ ...markData, worker_id: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">Select Worker</option>
+                  {workers.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="w-full p-3 border rounded-xl text-sm"
+                  onChange={(e) =>
+                    setMarkData({ ...markData, status: e.target.value })
+                  }
+                >
+                  <option>Present</option>
+                  <option>Absent</option>
+                  <option>Leave</option>
+                </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="time"
+                    className="w-full p-3 border rounded-xl"
+                    onChange={(e) =>
+                      setMarkData({ ...markData, check_in: e.target.value })
+                    }
+                  />
+                  <input
+                    type="time"
+                    className="w-full p-3 border rounded-xl"
+                    onChange={(e) =>
+                      setMarkData({ ...markData, check_out: e.target.value })
+                    }
+                  />
+                </div>
+                <input
+                  type="number"
+                  placeholder="OT Hours"
+                  className="w-full p-3 border rounded-xl text-sm"
+                  onChange={(e) =>
+                    setMarkData({ ...markData, ot_hours: e.target.value })
+                  }
+                />
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-brand-gold text-white rounded-xl font-bold text-xs"
+                >
+                  Save Attendance
+                </button>
+              </form>
             </div>
           </div>
         )}
 
         {/* --- TOP SUMMARY STAT CARDS --- */}
         <div className="grid grid-cols-4 gap-6">
-          <StatCard title="Present Today" value="4" color="emerald" />
-          <StatCard title="Absent" value="1" color="red" />
-          <StatCard title="On Leave" value="1" color="amber" />
-          <StatCard title="Total OT Hours" value="4.2" color="blue" />
+          <StatCard
+            title="Present Today"
+            value={attendanceData.filter((a) => a.status === "Present").length}
+            color="emerald"
+          />
+          <StatCard
+            title="Absent"
+            value={attendanceData.filter((a) => a.status === "Absent").length}
+            color="red"
+          />
+          <StatCard
+            title="On Leave"
+            value={attendanceData.filter((a) => a.status === "Leave").length}
+            color="amber"
+          />
+          <StatCard
+            title="Total OT Hours"
+            value={attendanceData.reduce(
+              (acc, a) => acc + Number(a.ot_hours || 0),
+              0,
+            )}
+            color="blue"
+          />
         </div>
 
         {/* --- MAIN ATTENDANCE TABLE CARD --- */}
