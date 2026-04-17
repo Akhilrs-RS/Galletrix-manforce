@@ -1,43 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Check } from "lucide-react";
+import api from "../../utils/api";
 
 export default function Deployment({ role = "admin" }) {
-  // --- STATE MANAGEMENT ---
   const [notification, setNotification] = useState(null);
+  const [deployed, setDeployed] = useState([]);
+  const [available, setAvailable] = useState([]);
+  const [deployments, setDeployments] = useState([]);
 
-  // Simulated Data based on screenshot
-  const deployedWorkers = [
-    {
-      name: "Mohammed Al Rashidi",
-      id: "MA",
-      client: "Al Futtaim Group",
-      site: "Downtown Dubai",
-    },
-    {
-      name: "Carlos Fernandez",
-      id: "CF",
-      client: "Emaar Properties",
-      site: "Business Bay",
-    },
-    {
-      name: "Ahmed Hassan",
-      id: "AH",
-      client: "DAMAC Properties",
-      site: "Arjan",
-    },
-  ];
+  const fetchData = async () => {
+    try {
+      const [wRes, dRes] = await Promise.all([api.get("/workers"), api.get("/deployments")]);
+      setDeployed(wRes.data.filter(w => w.status === 'Deployed'));
+      setAvailable(wRes.data.filter(w => w.status === 'Available'));
+      setDeployments(dRes.data);
+    } catch (err) { console.error(err); }
+  };
 
-  const availableWorkers = [
-    { name: "Ramesh Kumar", id: "RK", role: "Plumber", nat: "Indian" },
-    { name: "Bibek Thapa", id: "BT", role: "Helper", nat: "Nepalese" },
-  ];
+  useEffect(() => { fetchData(); }, []);
 
-  // --- ACTIONS ---
-  const handleAssign = (workerName) => {
-    setNotification(`Assigned ${workerName}`);
-    // Auto-hide notification after 3 seconds
-    setTimeout(() => setNotification(null), 3000);
+  const handleAssign = async (workerId) => {
+    if(deployments.length === 0) return alert("No active deployments found");
+    try {
+        await api.post("/deployments/assign", { worker_id: workerId, deployment_id: deployments[0].id });
+        setNotification("Worker assigned successfully");
+        fetchData();
+        setTimeout(() => setNotification(null), 3000);
+    } catch (err) { console.error(err); }
   };
 
   return (
@@ -61,7 +51,7 @@ export default function Deployment({ role = "admin" }) {
             <div className="p-6 border-b border-slate-50 flex items-center gap-3 bg-slate-50/30">
               <span className="text-red-500 text-lg">📍</span>
               <h3 className="text-[13px] font-bold text-slate-800 uppercase tracking-widest">
-                Deployed ({deployedWorkers.length})
+                Deployed ({deployed.length})
               </h3>
             </div>
 
@@ -74,70 +64,69 @@ export default function Deployment({ role = "admin" }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {deployedWorkers.map((w, i) => (
+                {deployed.map((w, i) => (
                   <tr
                     key={i}
                     className="hover:bg-slate-50 transition-colors text-[11px]"
                   >
                     <td className="px-6 py-5 flex items-center gap-4">
                       <div className="w-9 h-9 rounded-full bg-brand-navy flex items-center justify-center text-white font-bold text-[10px] shadow-sm">
-                        {w.id}
+                        {w.worker_id}
                       </div>
                       <span className="font-bold text-slate-700">{w.name}</span>
                     </td>
                     <td className="px-6 py-5 font-medium text-slate-500">
-                      {w.client}
+                      {w.client_name || 'N/A'}
                     </td>
                     <td className="px-6 py-5">
                       <span className="text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                        {w.site}
+                        {w.site || 'N/A'}
                       </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+              </table>
+              </div>
 
-          {/* RIGHT: AVAILABLE WORKERS (2 Columns Wide) */}
-          <div className="col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden h-fit">
-            <div className="p-6 border-b border-slate-50 flex items-center gap-3 bg-slate-50/30">
+              {/* RIGHT: AVAILABLE WORKERS (2 Columns Wide) */}
+              <div className="col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden h-fit">
+              <div className="p-6 border-b border-slate-50 flex items-center gap-3 bg-slate-50/30">
               <span className="text-emerald-500 text-lg">✅</span>
               <h3 className="text-[13px] font-bold text-slate-800 uppercase tracking-widest">
-                Available ({availableWorkers.length})
+                Available ({available.length})
               </h3>
-            </div>
+              </div>
 
-            <div className="divide-y divide-slate-50">
-              {availableWorkers.map((w, i) => (
+              <div className="divide-y divide-slate-50">
+              {available.map((w, i) => (
                 <div
                   key={i}
                   className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-9 h-9 rounded-full bg-brand-navy flex items-center justify-center text-white font-bold text-[10px] shadow-sm">
-                      {w.id}
+                      {w.worker_id}
                     </div>
                     <div>
                       <p className="text-[12px] font-bold text-slate-700">
                         {w.name}
                       </p>
                       <p className="text-[10px] text-slate-400 font-medium">
-                        {w.role} · {w.nat}
+                        {w.category} · {w.nationality}
                       </p>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleAssign(w.name)}
+                    onClick={() => handleAssign(w.id)}
                     className="bg-brand-gold text-white px-5 py-1.5 rounded-lg text-[10px] font-bold hover:brightness-110 shadow-lg shadow-brand-gold/20 transition-all cursor-pointer"
                   >
                     Assign
                   </button>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
+              </div>
+              </div>        </div>
       </div>
     </DashboardLayout>
   );

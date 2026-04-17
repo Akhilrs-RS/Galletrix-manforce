@@ -1,51 +1,27 @@
 const db = require('../config/db');
 
-exports.getAll = async (req, res, next) => {
+exports.getDeployments = async (req, res, next) => {
   try {
-    const deployments = await db('deployments').select('*');
+    const deployments = await db('deployments')
+      .leftJoin('clients', 'deployments.client_id', 'clients.id')
+      .select('deployments.*', 'clients.name as client_name');
     res.json(deployments);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
-exports.getById = async (req, res, next) => {
+exports.assignWorker = async (req, res, next) => {
   try {
-    const deployment = await db('deployments').where({ id: req.params.id }).first();
+    const { worker_id, deployment_id } = req.body;
+    // Simple logic: update worker's client/site to match deployment
+    const deployment = await db('deployments').where({ id: deployment_id }).first();
     if (!deployment) return res.status(404).json({ message: 'Deployment not found' });
-    res.json(deployment);
-  } catch (err) {
-    next(err);
-  }
-};
 
-exports.create = async (req, res, next) => {
-  try {
-    const [id] = await db('deployments').insert(req.body).returning('id');
-    const newRecord = await db('deployments').where({ id }).first();
-    res.status(201).json(newRecord);
-  } catch (err) {
-    next(err);
-  }
-};
+    await db('workers').where({ id: worker_id }).update({
+      client_id: deployment.client_id,
+      site: deployment.site,
+      status: 'Deployed'
+    });
 
-exports.update = async (req, res, next) => {
-  try {
-    const updated = await db('deployments').where({ id: req.params.id }).update(req.body);
-    if (!updated) return res.status(404).json({ message: 'Deployment not found' });
-    const record = await db('deployments').where({ id: req.params.id }).first();
-    res.json(record);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.delete = async (req, res, next) => {
-  try {
-    const deleted = await db('deployments').where({ id: req.params.id }).del();
-    if (!deleted) return res.status(404).json({ message: 'Deployment not found' });
-    res.json({ message: 'Deployment deleted' });
-  } catch (err) {
-    next(err);
-  }
+    res.json({ message: 'Worker assigned' });
+  } catch (err) { next(err); }
 };
