@@ -77,7 +77,7 @@ export default function DashboardLayout({ children, role }) {
     if (path === "roles") return "Roles & Access";
     if (path.includes("leaves")) return "My Leaves";
     if (path.includes("financials")) return "Financial Overview";
-    if (path === "crm") return "Client CRM";
+    if (path === "crm") return "CRM";
 
     return path.replace("-", " ") || "Home";
   };
@@ -208,7 +208,7 @@ export default function DashboardLayout({ children, role }) {
               {isAdmin && (
                 <SidebarItem
                   icon={Target}
-                  label="Client CRM"
+                  label="CRM"
                   active={location.pathname === "/crm"}
                   onClick={() => navigate("/crm")}
                 />

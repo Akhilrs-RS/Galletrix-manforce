@@ -42,6 +42,20 @@ export default function Workers({ role }) {
     }
   };
 
+  const fetchNextWorkerId = async () => {
+    try {
+      const response = await api.get("/workers/next-id");
+      setNewWorker((prev) => ({ ...prev, worker_id: response.data.nextId }));
+    } catch (err) {
+      console.error("Failed to fetch next worker ID:", err);
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    fetchNextWorkerId();
+    setShowAddModal(true);
+  };
+
   const [newWorker, setNewWorker] = useState({
     name: "",
     worker_id: "",
@@ -51,6 +65,11 @@ export default function Workers({ role }) {
     salary: "",
     expiry: "",
     emirates_id: "",
+    hr_allowance: "",
+    da_allowance: "",
+    wage_type: "Monthly",
+    daily_wage: "",
+    monthly_wage: "",
   });
 
   const filteredWorkers = useMemo(() => {
@@ -72,10 +91,15 @@ export default function Workers({ role }) {
   const handleAddWorker = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/workers", {
-        ...newWorker,
-        status: "Available",
-      });
+      const payload = { ...newWorker, status: "Available" };
+      if (payload.wage_type === "Daily") {
+        payload.monthly_wage = 0;
+      } else {
+        payload.daily_wage = 0;
+      }
+      delete payload.wage_type;
+
+      await api.post("/workers", payload);
       setShowAddModal(false);
       fetchWorkers();
       setNewWorker({
@@ -87,6 +111,11 @@ export default function Workers({ role }) {
         salary: "",
         expiry: "",
         emirates_id: "",
+        hr_allowance: "",
+        da_allowance: "",
+        wage_type: "Monthly",
+        daily_wage: "",
+        monthly_wage: "",
       });
     } catch (err) {
       console.error("Failed to add worker:", err);
@@ -120,17 +149,8 @@ export default function Workers({ role }) {
               <option>Available</option>
               <option>On Leave</option>
             </select>
-            <select
-              className="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-[11px] font-bold text-slate-600 outline-none cursor-pointer"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-            >
-              <option>All Labour</option>
-              <option>Own Labour</option>
-              <option>Outsourced</option>
-            </select>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={handleOpenAddModal}
               className="bg-brand-gold text-white px-4 py-2 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:brightness-110 shadow-lg ml-2 transition-all cursor-pointer"
             >
               <Plus size={16} /> Add Worker
@@ -144,16 +164,6 @@ export default function Workers({ role }) {
           workers={filteredWorkers.filter((w) => w.type === "Own")}
           icon={Users}
           desc="Directly employed workers"
-          onView={(w) => {
-            setSelectedWorker(w);
-            setShowViewModal(true);
-          }}
-        />
-        <WorkerTableSection
-          title="Outsourced Labour"
-          workers={filteredWorkers.filter((w) => w.type === "Outsourced")}
-          icon={ExternalLink}
-          desc="Third-party / contract workers"
           onView={(w) => {
             setSelectedWorker(w);
             setShowViewModal(true);
@@ -192,9 +202,7 @@ export default function Workers({ role }) {
                   <ModalInput
                     label="Worker ID"
                     value={newWorker.worker_id}
-                    onChange={(e) =>
-                      setNewWorker({ ...newWorker, worker_id: e.target.value })
-                    }
+                    disabled={true}
                     placeholder="W00X"
                   />
                   <ModalSelect
@@ -205,22 +213,19 @@ export default function Workers({ role }) {
                     }
                     options={["Own", "Outsourced"]}
                   />
-                  <ModalSelect
+                  <ModalSelectEditable
                     label="Category"
                     value={newWorker.category}
-                    onChange={(e) =>
-                      setNewWorker({ ...newWorker, category: e.target.value })
+                    onChange={(val) =>
+                      setNewWorker({ ...newWorker, category: val })
                     }
                     options={["Electrician", "Plumber", "Mason", "Foreman"]}
                   />
-                  <ModalSelect
+                  <ModalSelectEditable
                     label="Nationality"
                     value={newWorker.nationality}
-                    onChange={(e) =>
-                      setNewWorker({
-                        ...newWorker,
-                        nationality: e.target.value,
-                      })
+                    onChange={(val) =>
+                      setNewWorker({ ...newWorker, nationality: val })
                     }
                     options={["Pakistani", "Indian", "Filipino", "Egyptian"]}
                   />
@@ -259,26 +264,60 @@ export default function Workers({ role }) {
                 </div>
                 <div className="pt-4 space-y-4">
                   <h4 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                    <Clock size={14} /> Overtime (This Month)
+                    <Info size={14} /> Allowances (AED)
                   </h4>
                   <div className="grid grid-cols-2 gap-5">
-                    <ModalInput label="OT Hours Worked" placeholder="e.g. 12" />
-                    <ModalSelect
-                      label="OT Rate Multiplier"
-                      value={newWorker.otMultiplier}
-                      options={["1.25x (Standard UAE)", "1.5x (Holiday)"]}
+                    <ModalInput
+                      label="HR Allowance"
+                      value={newWorker.hr_allowance}
+                      onChange={(e) =>
+                        setNewWorker({
+                          ...newWorker,
+                          hr_allowance: e.target.value,
+                        })
+                      }
+                      placeholder="e.g. 500"
+                      optional={true}
+                    />
+                    <ModalInput
+                      label="DA Allowance"
+                      value={newWorker.da_allowance}
+                      onChange={(e) =>
+                        setNewWorker({
+                          ...newWorker,
+                          da_allowance: e.target.value,
+                        })
+                      }
+                      placeholder="e.g. 200"
+                      optional={true}
                     />
                   </div>
-                  <ModalInput
-                    label="OT Amount (AED) — Auto-calculated"
-                    placeholder="0"
-                  />
-                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl flex gap-3 items-start">
-                    <Info size={16} className="text-blue-500 shrink-0" />
-                    <p className="text-[9px] text-blue-700">
-                      <strong>UAE Labour Law:</strong> OT is paid at 1.25× the
-                      basic hourly rate.
-                    </p>
+                </div>
+
+                <div className="pt-4 space-y-4">
+                  <h4 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                    <Calendar size={14} /> Wage Details (AED)
+                  </h4>
+                  <div className="grid grid-cols-2 gap-5">
+                    <ModalSelect
+                      label="Wage Type"
+                      value={newWorker.wage_type}
+                      onChange={(e) =>
+                        setNewWorker({ ...newWorker, wage_type: e.target.value })
+                      }
+                      options={["Daily", "Monthly"]}
+                    />
+                    <ModalInput
+                      label="Wage Amount"
+                      value={newWorker.wage_type === "Daily" ? newWorker.daily_wage : newWorker.monthly_wage}
+                      onChange={(e) =>
+                        setNewWorker({
+                          ...newWorker,
+                          [newWorker.wage_type === "Daily" ? "daily_wage" : "monthly_wage"]: e.target.value,
+                        })
+                      }
+                      placeholder="e.g. 3000"
+                    />
                   </div>
                 </div>
                 <div className="flex gap-3 pt-6">
@@ -339,6 +378,22 @@ export default function Workers({ role }) {
                   <DetailBox
                     label="Salary"
                     value={`AED ${selectedWorker.salary}`}
+                  />
+                  <DetailBox
+                    label="HR Allowance"
+                    value={`AED ${selectedWorker.hr_allowance || 0}`}
+                  />
+                  <DetailBox
+                    label="DA Allowance"
+                    value={`AED ${selectedWorker.da_allowance || 0}`}
+                  />
+                  <DetailBox
+                    label="Daily Wage"
+                    value={`AED ${selectedWorker.daily_wage || 0}`}
+                  />
+                  <DetailBox
+                    label="Monthly Wage"
+                    value={`AED ${selectedWorker.monthly_wage || 0}`}
                   />
                   <DetailBox label="Labour Type" value={selectedWorker.type} />
                   <DetailBox label="Status" value={selectedWorker.status} />
@@ -466,12 +521,17 @@ function WorkerTableSection({ title, workers, icon: Icon, desc, onView }) {
 }
 
 // --- HELPERS ---
-function ModalInput({ label, value, onChange, placeholder, disabled }) {
+function ModalInput({ label, value, onChange, placeholder, disabled, optional }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-        {label}
-      </label>
+      <div className="flex justify-between items-center">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          {label}
+        </label>
+        {optional && (
+          <span className="text-[9px] font-medium text-slate-300 italic">Optional</span>
+        )}
+      </div>
       <input
         disabled={disabled}
         value={value}
@@ -503,6 +563,31 @@ function ModalSelect({ label, value, onChange, options }) {
           size={14}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
         />
+      </div>
+    </div>
+  );
+}
+
+function ModalSelectEditable({ label, value, onChange, options }) {
+  const listId = `list-${label.replace(/\s+/g, "-").toLowerCase()}`;
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          list={listId}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm transition-all"
+          placeholder={`Select or type ${label.toLowerCase()}...`}
+        />
+        <datalist id={listId}>
+          {options.map((opt) => (
+            <option key={opt} value={opt} />
+          ))}
+        </datalist>
       </div>
     </div>
   );

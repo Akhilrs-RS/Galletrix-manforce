@@ -32,6 +32,18 @@ router.get('/', auth, workerController.getWorkers);
 
 /**
  * @openapi
+ * /api/workers/next-id:
+ *   get:
+ *     summary: Get the next sequential worker ID
+ *     tags: [Workers]
+ *     responses:
+ *       200:
+ *         description: Next worker ID
+ */
+router.get('/next-id', auth, workerController.getNextWorkerId);
+
+/**
+ * @openapi
  * /api/workers/{id}:
  *   get:
  *     summary: Get worker by ID

@@ -17,6 +17,26 @@ exports.getWorkers = async (req, res, next) => {
   }
 };
 
+exports.getNextWorkerId = async (req, res, next) => {
+  try {
+    const lastWorker = await db('workers')
+      .where('worker_id', 'like', 'W%')
+      .orderByRaw('CAST(SUBSTRING(worker_id, 2) AS INTEGER) DESC')
+      .first();
+
+    let nextId = 'W001';
+    if (lastWorker && lastWorker.worker_id) {
+      const lastNum = parseInt(lastWorker.worker_id.substring(1));
+      const nextNum = lastNum + 1;
+      nextId = `W${nextNum.toString().padStart(3, '0')}`;
+    }
+
+    res.json({ nextId });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getWorkerById = async (req, res, next) => {
   try {
     const { id } = req.params;

@@ -76,25 +76,7 @@ export default function RolesAccess({ role = "admin" }) {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [notification, setNotification] = useState(null);
 
-  const [permissionMatrix, setPermissionMatrix] = useState([
-    { module: "View Dashboard", roles: [true, true, true, true] },
-    { module: "View All Workers", roles: [true, true, true, false] },
-    { module: "Add / Edit Workers", roles: [true, true, true, false] },
-    { module: "View Worker Salaries", roles: [true, false, false, false] },
-    { module: "View Clients", roles: [true, true, false, false] },
-    { module: "Manage Deployment", roles: [true, false, true, false] },
-    { module: "Mark Attendance", roles: [true, true, true, false] },
-    { module: "Manage Recruitment", roles: [true, true, false, false] },
-    { module: "View Payroll", roles: [true, true, false, false] },
-    { module: "Run Payroll", roles: [true, false, false, false] },
-    { module: "View Invoices", roles: [true, true, false, false] },
-    { module: "View Revenue Reports", roles: [true, false, false, false] },
-    { module: "Approve Leave Requests", roles: [true, true, false, false] },
-    { module: "Apply for Own Leave", roles: [true, true, true, true] },
-    { module: "View Documents", roles: [true, true, false, false] },
-    { module: "View Operational Reports", roles: [true, true, true, false] },
-    { module: "Manage Roles & Access", roles: [true, false, false, false] },
-  ]);
+
 
   // --- 2. ACTIONS ---
   const triggerNotify = (msg) => {
@@ -102,11 +84,7 @@ export default function RolesAccess({ role = "admin" }) {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleToggle = (rowIdx, colIdx) => {
-    const newMatrix = [...permissionMatrix];
-    newMatrix[rowIdx].roles[colIdx] = !newMatrix[rowIdx].roles[colIdx];
-    setPermissionMatrix(newMatrix);
-  };
+
 
   const handleAddUser = (e) => {
     e.preventDefault();
@@ -199,54 +177,7 @@ export default function RolesAccess({ role = "admin" }) {
           />
         </div>
 
-        {/* Permissions Table (Independent Toggles) */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-12">
-          <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center px-10">
-            <div className="flex items-center gap-2">
-              <Lock size={16} className="text-brand-gold" />
-              <h3 className="text-[13px] font-bold text-slate-800 uppercase tracking-widest">
-                Permissions Matrix
-              </h3>
-            </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-              <span className="text-brand-gold">Gold</span> = allowed •{" "}
-              <span className="text-slate-300">Grey</span> = denied
-            </p>
-          </div>
-          <table className="w-full text-left">
-            <thead className="bg-[#FAF9F6] text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
-              <tr>
-                <th className="px-10 py-5 w-1/2">Module / Permission</th>
-                <th className="px-4 py-5 text-center">Admin</th>
-                <th className="px-4 py-5 text-center">HR</th>
-                <th className="px-4 py-5 text-center">Supervisor</th>
-                <th className="px-4 py-5 text-center">Worker</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {permissionMatrix.map((p, rowIdx) => (
-                <tr
-                  key={rowIdx}
-                  className="hover:bg-slate-50/50 transition-colors group"
-                >
-                  <td className="px-10 py-4 text-[13px] font-bold text-slate-700">
-                    {p.module}
-                  </td>
-                  {p.roles.map((isEnabled, colIdx) => (
-                    <td key={colIdx} className="px-4 py-4">
-                      <div className="flex justify-center">
-                        <Toggle
-                          enabled={isEnabled}
-                          onToggle={() => handleToggle(rowIdx, colIdx)}
-                        />
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
 
         {/* --- ADD USER MODAL --- */}
         {showAddUserModal && (
