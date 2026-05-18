@@ -214,6 +214,21 @@ export default function DashboardLayout({ children, role }) {
                 />
               )}
 
+              <SidebarItem
+                icon={ClipboardList}
+                label="Work Orders"
+                active={location.pathname.includes("work-orders")}
+                onClick={() =>
+                  navigate(
+                    isHR
+                      ? "/hr-work-orders"
+                      : isSupervisor
+                        ? "/sv-work-orders"
+                        : "/work-orders",
+                  )
+                }
+              />
+
               {(isAdmin || isSupervisor) && (
                 <SidebarItem
                   icon={Truck}

@@ -11,14 +11,8 @@ const auth = require('../middleware/auth');
  *     tags: [Deployments]
  */
 router.get('/', auth, deploymentsController.getDeployments);
-
-/**
- * @openapi
- * /api/deployments/assign:
- *   post:
- *     summary: Assign a worker to a deployment
- *     tags: [Deployments]
- */
 router.post('/assign', auth, deploymentsController.assignWorker);
+router.post('/assign-multiple', auth, deploymentsController.assignMultipleWorkers);
+router.post('/complete-worker', auth, deploymentsController.completeWorkerDeployment);
 
 module.exports = router;

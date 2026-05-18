@@ -23,4 +23,26 @@ router.get('/', auth, async (req, res, next) => {
   }
 });
 
+router.post('/', auth, async (req, res, next) => {
+  try {
+    const { name, contact, phone, type, rate, till, status, revenue, workers } = req.body;
+    const [id] = await db('clients')
+      .insert({
+        name,
+        contact: contact || null,
+        phone: phone || null,
+        type: type || null,
+        rate: parseFloat(rate) || 0,
+        till: till || null,
+        status: status || 'Active',
+        revenue: parseFloat(revenue) || 0,
+        workers: parseInt(workers) || 0
+      })
+      .returning('id');
+    res.status(201).json({ id, message: 'Client created successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

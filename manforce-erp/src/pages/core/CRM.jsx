@@ -117,6 +117,7 @@ export default function CRM({ role = "admin" }) {
   const [isContactModalOpen, setContactModalOpen] = useState(false);
   const [isDealModalOpen, setDealModalOpen] = useState(false);
   const [isActivityModalOpen, setActivityModalOpen] = useState(false);
+  const [dbClients, setDbClients] = useState([]);
 
   // Drag Sensors
   const sensors = useSensors(
@@ -226,12 +227,14 @@ export default function CRM({ role = "admin" }) {
 
   const fetchData = async () => {
     try {
-      const [cRes, dRes, aRes] = await Promise.all([
+      const [cRes, dRes, aRes, clientsRes] = await Promise.all([
         api.get("/crm/contacts"),
         api.get("/crm/deals"),
         api.get("/crm/activities"),
+        api.get("/clients").catch(() => ({ data: [] })),
       ]);
       
+      setDbClients(clientsRes.data || []);
       if (cRes.data && cRes.data.length > 0) setContacts(cRes.data);
       if (aRes.data && aRes.data.length > 0) setActivities(aRes.data);
 
@@ -360,7 +363,7 @@ export default function CRM({ role = "admin" }) {
     title: "",
     value: "",
     stage: "LEAD",
-    client: "Tech Corp",
+    client: "",
     address: "",
   });
   const [newActivity, setNewActivity] = useState({
@@ -380,10 +383,11 @@ export default function CRM({ role = "admin" }) {
           value: parseInt(newDeal.value.toString().replace(/[^0-9]/g, "")) || 0,
           stage: newDeal.stage,
           address: newDeal.address,
+          client: newDeal.client,
         };
         await api.post("/crm/deals", dealToSubmit);
         setModalOpen(false);
-        setNewDeal({ title: "", value: "", stage: "LEAD", client: "Tech Corp", address: "" });
+        setNewDeal({ title: "", value: "", stage: "LEAD", client: "", address: "" });
         fetchData(); // Refresh UI
       } catch (err) {
         console.error("Failed to save deal", err);
@@ -838,6 +842,7 @@ export default function CRM({ role = "admin" }) {
                 required
                 type="text"
                 placeholder="e.g. Tech Corp"
+                list="client-suggestions"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
                 value={newContact.company}
                 onChange={(e) => setNewContact({...newContact, company: e.target.value})}
@@ -914,23 +919,17 @@ export default function CRM({ role = "admin" }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                  Client Company
+                  Client Name
                 </label>
-                <div className="relative">
-                  <select
-                    value={newDeal.client}
-                    onChange={(e) => setNewDeal({ ...newDeal, client: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer"
-                  >
-                    <option value="Tech Corp">Tech Corp</option>
-                    <option value="StartUp Inc">StartUp Inc</option>
-                    <option value="Enterprise Ltd">Enterprise Ltd</option>
-                  </select>
-                  <ChevronDown
-                    size={14}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                  />
-                </div>
+                <input
+                  required
+                  type="text"
+                  value={newDeal.client}
+                  onChange={(e) => setNewDeal({ ...newDeal, client: e.target.value })}
+                  placeholder="e.g. Acme Corporation"
+                  list="client-suggestions"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
@@ -1082,6 +1081,12 @@ export default function CRM({ role = "admin" }) {
             </div>
           </form>
         </Modal>
+
+        <datalist id="client-suggestions">
+          {dbClients.map((client) => (
+            <option key={client.id} value={client.name} />
+          ))}
+        </datalist>
       </div>
     </DashboardLayout>
   );

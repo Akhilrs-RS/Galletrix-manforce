@@ -105,6 +105,7 @@ const leaveRequestRoutes = require('./routes/leave_requests');
 const documentRoutes = require('./routes/documents');
 const recruitmentRoutes = require('./routes/recruitment');
 const crmRoutes = require('./routes/crm');
+const workOrderRoutes = require('./routes/work_orders');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -118,6 +119,7 @@ app.use('/api/leave-requests', leaveRequestRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/recruitment', recruitmentRoutes);
 app.use('/api/crm', crmRoutes);
+app.use('/api/work-orders', workOrderRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

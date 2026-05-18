@@ -19,6 +19,7 @@ import Clients from "./pages/core/Clients";
 import Deployment from "./pages/core/Deployment";
 import RolesAccess from "./pages/core/RolesAccess";
 import CRM from "./pages/core/CRM"; // ✅ Added CRM Import
+import WorkOrders from "./pages/core/WorkOrders";
 
 // Accounts Page
 import AccountsDashboard from "./pages/accounts/AccountsDashboard";
@@ -62,6 +63,7 @@ export default function App() {
         <Route path="/roles" element={<RolesAccess role="admin" />} />
         <Route path="/crm" element={<CRM role="admin" />} />{" "}
         {/* ✅ Added CRM Route */}
+        <Route path="/work-orders" element={<WorkOrders role="admin" />} />
         {/* --- HR MODULE --- */}
         <Route path="/hr-dashboard" element={<HRDashboard role="hr" />} />
         <Route path="/hr-workers" element={<Workers role="hr" />} />
@@ -70,6 +72,7 @@ export default function App() {
         <Route path="/hr-leave-mgmt" element={<LeaveMgmt role="hr" />} />
         <Route path="/hr-documents" element={<Documents role="hr" />} />
         <Route path="/hr-reports" element={<Reports role="hr" />} />
+        <Route path="/hr-work-orders" element={<WorkOrders role="hr" />} />
         {/* --- SUPERVISOR MODULE --- */}
         <Route
           path="/sv-dashboard"
@@ -84,6 +87,7 @@ export default function App() {
           path="/sv-attendance"
           element={<Attendance role="supervisor" />}
         />
+        <Route path="/sv-work-orders" element={<WorkOrders role="supervisor" />} />
         {/* --- WORKER MODULE --- */}
         <Route
           path="/worker-dashboard"

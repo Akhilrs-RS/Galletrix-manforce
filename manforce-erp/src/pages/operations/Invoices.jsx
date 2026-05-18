@@ -1,17 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Plus, X, ChevronDown, Check, Loader2 } from "lucide-react";
+import api from "../../utils/api";
 
 export default function Invoices({ role }) {
   // --- 1. STATE MANAGEMENT ---
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [clientsList, setClientsList] = useState([]);
   const [newInvoice, setNewInvoice] = useState({
-    client: "Al Futtaim Group",
+    client: "",
     amount: "",
     issued: "",
     due: "",
   });
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const res = await api.get("/clients");
+        setClientsList(res.data || []);
+        if (res.data && res.data.length > 0) {
+          setNewInvoice((prev) => ({ ...prev, client: res.data[0].name }));
+        }
+      } catch (err) {
+        console.error("Failed to load clients in Invoices page:", err);
+      }
+    };
+    fetchClients();
+  }, []);
 
   const [invoices, setInvoices] = useState([
     {
@@ -234,10 +251,11 @@ export default function Invoices({ role }) {
                         setNewInvoice({ ...newInvoice, client: e.target.value })
                       }
                     >
-                      <option>Al Futtaim Group</option>
-                      <option>Emaar Properties</option>
-                      <option>DAMAC Properties</option>
-                      <option>DP World</option>
+                      {clientsList.map((c) => (
+                        <option key={c.id} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                     <ChevronDown
                       size={16}
