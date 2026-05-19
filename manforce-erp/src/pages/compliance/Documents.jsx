@@ -11,6 +11,21 @@ export default function Documents({ role }) {
   const [newDoc, setNewDoc] = useState({ type: "Visa", number: "", expiry: "", worker_id: "" });
   const [workers, setWorkers] = useState([]);
 
+  const getExpiryWarning = () => {
+    if (!newDoc.expiry) return null;
+    const expiry = new Date(newDoc.expiry);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    if (diffDays >= 0 && diffDays <= 35) {
+      return {
+        days: diffDays,
+        message: `This document will expire in ${diffDays} days! (Within the critical 30-day window, including the 5-day alert gap).`
+      };
+    }
+    return null;
+  };
+
   const fetchDocuments = async () => {
     try {
       setIsLoading(true);
@@ -120,20 +135,112 @@ export default function Documents({ role }) {
         </div>
 
         {showUploadModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/60 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden p-8 space-y-4">
-              <h3 className="text-lg font-bold">Add New Document</h3>
-              <select className="w-full p-3 bg-slate-50 border rounded-xl text-sm" value={newDoc.worker_id} onChange={(e) => setNewDoc({...newDoc, worker_id: e.target.value})}>
-                <option value="">Select Worker</option>
-                {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
-              <input type="text" placeholder="Type (e.g. Visa)" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" value={newDoc.type} onChange={(e) => setNewDoc({...newDoc, type: e.target.value})} />
-              <input type="text" placeholder="Doc Number" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" value={newDoc.number} onChange={(e) => setNewDoc({...newDoc, number: e.target.value})} />
-              <input type="date" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" value={newDoc.expiry} onChange={(e) => setNewDoc({...newDoc, expiry: e.target.value})} />
-              <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="block w-full text-sm p-3 border rounded-xl" />
-              <div className="flex gap-3">
-                <button onClick={() => setShowUploadModal(false)} className="flex-1 py-3 border rounded-xl font-bold text-xs">Cancel</button>
-                <button onClick={handleUpload} className="flex-1 py-3 bg-brand-gold text-white rounded-xl font-bold text-xs">Save</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100/50 flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                <h3 className="text-base font-black text-slate-800 tracking-tight text-left">
+                  Add New Document
+                </h3>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-slate-400 hover:text-slate-600 animate-none"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Form Body */}
+              <div className="p-8 space-y-5 overflow-y-auto custom-scrollbar text-left">
+                {/* 1. Worker select field */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                    Select Worker
+                  </label>
+                  <select 
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer"
+                    value={newDoc.worker_id} 
+                    onChange={(e) => setNewDoc({...newDoc, worker_id: e.target.value})}
+                  >
+                    <option value="">Select Worker...</option>
+                    {workers.map(w => <option key={w.id} value={w.id}>{w.name} (ID: {w.worker_id})</option>)}
+                  </select>
+                </div>
+
+                {/* 2. Type input field */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                    Document Type
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Visa, Labor Card, Passport" 
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                    value={newDoc.type} 
+                    onChange={(e) => setNewDoc({...newDoc, type: e.target.value})} 
+                  />
+                </div>
+
+                {/* 3. Number input field */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                    Document Number
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. 784-XXXX-XXXXXXX-X" 
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
+                    value={newDoc.number} 
+                    onChange={(e) => setNewDoc({...newDoc, number: e.target.value})} 
+                  />
+                </div>
+
+                {/* 4. Expiry Date input field */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                    Expiry Date
+                  </label>
+                  <input 
+                    type="date" 
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm cursor-pointer"
+                    value={newDoc.expiry} 
+                    onChange={(e) => setNewDoc({...newDoc, expiry: e.target.value})} 
+                  />
+                  {getExpiryWarning() && (
+                    <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl flex items-start gap-2.5 shadow-sm text-[11px] font-bold text-amber-800 tracking-tight animate-in slide-in-from-top-1 duration-200 mt-2">
+                      <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                      <span>{getExpiryWarning().message}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. Document File input field */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                    Document File Attachment
+                  </label>
+                  <input 
+                    type="file" 
+                    onChange={(e) => setSelectedFile(e.target.files[0])} 
+                    className="block w-full text-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer" 
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-6 border-t border-slate-50">
+                  <button 
+                    onClick={() => setShowUploadModal(false)} 
+                    className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleUpload} 
+                    className="flex-1 py-2.5 bg-brand-gold text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-gold/20 hover:brightness-110 transition-all cursor-pointer"
+                  >
+                    Save Document
+                  </button>
+                </div>
               </div>
             </div>
           </div>
