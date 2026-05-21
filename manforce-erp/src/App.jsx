@@ -33,6 +33,7 @@ import Attendance from "./pages/operations/Attendance";
 import Recruitment from "./pages/operations/Recruitment";
 import Payroll from "./pages/operations/Payroll";
 import Invoices from "./pages/operations/Invoices";
+import ExpenseCredits from "./pages/operations/ExpenseCredits";
 import LeaveMgmt from "./pages/operations/LeaveMgmt";
 
 // Compliance Pages
@@ -50,14 +51,15 @@ export default function App() {
           path="/admin-dashboard"
           element={<AdminDashboard role="admin" />}
         />
-        <Route path="/workers" element={<Workers />} />
-        <Route path="/clients" element={<Clients />} />
+        <Route path="/workers" element={<Workers role="admin" />} />
+        <Route path="/clients" element={<Clients role="admin" />} />
         <Route path="/deployment" element={<Deployment role="admin" />} />
         <Route path="/attendance" element={<Attendance role="admin" />} />
         <Route path="/recruitment" element={<Recruitment role="admin" />} />
         <Route path="/leave-mgmt" element={<LeaveMgmt role="admin" />} />
-        <Route path="/payroll" element={<Payroll />} />
-        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/payroll" element={<Payroll role="admin" />} />
+        <Route path="/invoices" element={<Invoices role="admin" />} />
+        <Route path="/expenses" element={<ExpenseCredits />} />
         <Route path="/documents" element={<Documents role="admin" />} />
         <Route path="/reports" element={<Reports role="admin" />} />
         <Route path="/roles" element={<RolesAccess role="admin" />} />
@@ -101,7 +103,7 @@ export default function App() {
         {/* --- ACCOUNTS MODULE --- */}
         <Route
           path="/accounts-dashboard"
-          element={<AccountsDashboard role="accounts" />}
+          element={<AccountsDashboard />}
         />
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />

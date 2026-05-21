@@ -15,6 +15,8 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -374,7 +376,7 @@ export default function CRM({ role = "admin" }) {
     status: "pending",
   });
 
-  const handleFormSubmit = async (e, setModalOpen, type = "deals", data = null) => {
+  const handleFormSubmit = async (e, setModalOpen, type = "deals") => {
     e.preventDefault();
     if (type === "deals") {
       try {
@@ -391,6 +393,24 @@ export default function CRM({ role = "admin" }) {
         fetchData(); // Refresh UI
       } catch (err) {
         console.error("Failed to save deal", err);
+      }
+    } else if (type === "contacts") {
+      try {
+        await api.post("/crm/contacts", newContact);
+        setModalOpen(false);
+        setNewContact({ name: "", company: "", email: "", phone: "" });
+        fetchData();
+      } catch (err) {
+        console.error("Failed to save contact", err);
+      }
+    } else if (type === "activities") {
+      try {
+        await api.post("/crm/activities", newActivity);
+        setModalOpen(false);
+        setNewActivity({ task: "Follow-up call", contact: contacts[0]?.name || "", date: "", priority: "Medium", status: "pending" });
+        fetchData();
+      } catch (err) {
+        console.error("Failed to save activity", err);
       }
     }
   };
@@ -591,50 +611,75 @@ export default function CRM({ role = "admin" }) {
                   <Plus size={16} /> Add Activity
                 </button>
               </div>
-              <div className="p-8 space-y-6">
+              <div className="p-8 flex flex-row flex-wrap gap-6">
                 <SortableContext
                   items={activities.map((a) => a.id)}
-                  strategy={verticalListSortingStrategy}
+                  strategy={rectSortingStrategy}
                 >
                   {activities.map((act) => (
                     <SortableItem key={act.id} id={act.id}>
-                      <div className="flex items-center justify-between p-5 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
-                        <div className="flex items-center gap-5">
+                      <div className="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 group hover:bg-white hover:shadow-md transition-all flex flex-col justify-between h-[180px] w-[320px] text-left shrink-0">
+                        {/* Top: Icon + Badges */}
+                        <div className="flex items-center justify-between">
                           <div
-                            className={`p-3 rounded-xl ${act.status === "completed" ? "bg-emerald-50 text-emerald-500" : "bg-amber-50 text-amber-500"}`}
+                            className={`p-2.5 rounded-xl ${act.status === "completed" ? "bg-emerald-50 text-emerald-500" : "bg-amber-50 text-amber-500"}`}
                           >
-                            {act.task.includes("call") ? (
-                              <Phone size={18} />
-                            ) : act.task.includes("demo") ? (
-                              <User size={18} />
+                            {act.task.toLowerCase().includes("call") ? (
+                              <Phone size={16} />
+                            ) : act.task.toLowerCase().includes("demo") ? (
+                              <User size={16} />
                             ) : (
-                              <Mail size={18} />
+                              <Mail size={16} />
                             )}
                           </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-slate-800">
-                              {act.task}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 font-medium">
-                              {act.contact} •{" "}
-                              <span className="font-mono">{act.date}</span>
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`text-[9px] font-bold uppercase tracking-widest leading-none ${act.priority === "high" ? "text-red-500" : act.priority === "medium" ? "text-amber-500" : "text-slate-400"}`}
+                            >
+                              {act.priority}
+                            </span>
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${act.status === "completed" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
+                            >
+                              {act.status}
+                            </span>
+                            
+                            {/* Premium Quick Add Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNewActivity({
+                                  task: "Follow-up call",
+                                  contact: act.contact,
+                                  date: new Date().toISOString().split("T")[0],
+                                  priority: "Medium",
+                                  status: "pending"
+                                });
+                                setActivityModalOpen(true);
+                              }}
+                              className="w-6 h-6 bg-brand-gold hover:bg-brand-gold text-white rounded-full flex items-center justify-center transition-all cursor-pointer shadow-md shadow-brand-gold/20 active:scale-90"
+                              title={`Add new activity for ${act.contact}`}
+                            >
+                              <Plus size={12} className="stroke-[3]" />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-6">
-                          <span
-                            className={`text-[10px] font-bold uppercase tracking-widest ${act.priority === "high" ? "text-red-500" : act.priority === "medium" ? "text-amber-500" : "text-slate-400"}`}
-                          >
-                            {act.priority}
+
+                        {/* Middle: Task Title */}
+                        <div className="space-y-1 my-2">
+                          <h4 className="text-sm font-bold text-slate-800 line-clamp-2">
+                            {act.task}
+                          </h4>
+                        </div>
+
+                        {/* Bottom: Contact & Date */}
+                        <div className="flex items-center justify-between border-t border-slate-100/80 pt-3">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate max-w-[140px]">
+                            {act.contact}
                           </span>
-                          <span
-                            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${act.status === "completed" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
-                          >
-                            {act.status}
+                          <span className="text-[10px] text-slate-400 font-bold font-mono">
+                            {act.date}
                           </span>
-                          <button className="p-2 text-slate-300 hover:text-slate-600 transition-colors">
-                            <MoreVertical size={16} />
-                          </button>
                         </div>
                       </div>
                     </SortableItem>
@@ -818,7 +863,7 @@ export default function CRM({ role = "admin" }) {
           title="Add New Contact"
         >
           <form
-            onSubmit={(e) => handleFormSubmit(e, 'contacts', setContactModalOpen, newContact)}
+            onSubmit={(e) => handleFormSubmit(e, setContactModalOpen, "contacts")}
             className="space-y-5"
           >
             <div className="space-y-1.5">
@@ -1001,7 +1046,7 @@ export default function CRM({ role = "admin" }) {
           title="Add Activity Task"
         >
           <form
-            onSubmit={(e) => handleFormSubmit(e, setActivityModalOpen)}
+            onSubmit={(e) => handleFormSubmit(e, setActivityModalOpen, "activities")}
             className="space-y-5"
           >
             <div className="space-y-1.5">
@@ -1009,10 +1054,14 @@ export default function CRM({ role = "admin" }) {
                 Activity Type
               </label>
               <div className="relative">
-                <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer">
-                  <option>Follow-up call</option>
-                  <option>Product demo</option>
-                  <option>Proposal sent</option>
+                <select
+                  value={newActivity.task}
+                  onChange={(e) => setNewActivity({ ...newActivity, task: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer"
+                >
+                  <option value="Follow-up call">Follow-up call</option>
+                  <option value="Product demo">Product demo</option>
+                  <option value="Proposal sent">Proposal sent</option>
                 </select>
                 <ChevronDown
                   size={14}
@@ -1026,9 +1075,14 @@ export default function CRM({ role = "admin" }) {
                   Assign Contact
                 </label>
                 <div className="relative">
-                  <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer">
+                  <select
+                    value={newActivity.contact}
+                    onChange={(e) => setNewActivity({ ...newActivity, contact: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer"
+                  >
+                    <option value="">Select Contact</option>
                     {contacts.map((c) => (
-                      <option key={c.name}>{c.name}</option>
+                      <option key={c.name} value={c.name}>{c.name}</option>
                     ))}
                   </select>
                   <ChevronDown
@@ -1044,6 +1098,8 @@ export default function CRM({ role = "admin" }) {
                 <input
                   required
                   type="date"
+                  value={newActivity.date}
+                  onChange={(e) => setNewActivity({ ...newActivity, date: e.target.value })}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm"
                 />
               </div>
@@ -1053,10 +1109,14 @@ export default function CRM({ role = "admin" }) {
                 Priority
               </label>
               <div className="relative">
-                <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer">
-                  <option>High</option>
-                  <option>Medium</option>
-                  <option>Low</option>
+                <select
+                  value={newActivity.priority}
+                  onChange={(e) => setNewActivity({ ...newActivity, priority: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-sm appearance-none cursor-pointer"
+                >
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
                 </select>
                 <ChevronDown
                   size={14}

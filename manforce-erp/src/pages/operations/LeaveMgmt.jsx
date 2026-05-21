@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Plus, X, ChevronDown, Check } from "lucide-react";
 import api from "../../utils/api";
@@ -10,6 +10,56 @@ export default function LeaveMgmt({ role = "admin" }) {
   const [notification, setNotification] = useState(null);
   const [requests, setRequests] = useState([]);
   const [workers, setWorkers] = useState([]);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [daysCount, setDaysCount] = useState("");
+
+  const [balances, setBalances] = useState([
+    { worker: "Mohammed Al Rashidi", entitlement: 30, used: 6 },
+    { worker: "Ramesh Kumar", entitlement: 30, used: 0 },
+    { worker: "Carlos Fernandez", entitlement: 30, used: 7 },
+    { worker: "Sanjay Patel", entitlement: 30, used: 0 },
+    { worker: "Ahmed Hassan", entitlement: 30, used: 0 },
+    { worker: "Bibek Thapa", entitlement: 30, used: 0 },
+  ]);
+
+  const calculatedBalances = useMemo(() => {
+    return balances.map((bal) => {
+      const approvedAnnualDays = requests
+        .filter((r) => r.worker_name === bal.worker && r.status === "Approved" && r.type === "Annual")
+        .reduce((sum, r) => sum + Number(r.days || 0), 0);
+
+      const totalUsed = bal.used + approvedAnnualDays;
+      const remaining = bal.entitlement - totalUsed;
+      const pctUsed = Math.min(100, Math.round((totalUsed / bal.entitlement) * 100));
+
+      return {
+        ...bal,
+        used: totalUsed,
+        remaining: remaining > 0 ? remaining : 0,
+        pctUsed,
+      };
+    });
+  }, [balances, requests]);
+
+  useEffect(() => {
+    if (fromDate && toDate) {
+      const start = new Date(fromDate);
+      const end = new Date(toDate);
+      const diffTime = end - start;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      setDaysCount(diffDays > 0 ? diffDays : "");
+    } else {
+      setDaysCount("");
+    }
+  }, [fromDate, toDate]);
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setFromDate("");
+    setToDate("");
+    setDaysCount("");
+  };
 
   useEffect(() => {
     fetchData();
@@ -44,7 +94,7 @@ export default function LeaveMgmt({ role = "admin" }) {
     const data = Object.fromEntries(formData.entries());
     try {
       await api.post("/leave-requests", { ...data, status: "Pending" });
-      setShowModal(false);
+      handleCloseModal();
       fetchData();
       triggerNotify("Request submitted successfully");
     } catch (err) {
@@ -217,69 +267,206 @@ export default function LeaveMgmt({ role = "admin" }) {
               </tbody>
             </table>
           ) : (
-            <div>{/* ... balance tab content ... */}</div>
+            <div className="text-left">
+              {/* Header inside the container */}
+              <div className="p-6 border-b border-slate-100 bg-slate-50/20">
+                <h3 className="text-sm font-bold text-slate-800 tracking-tight">
+                  Annual Leave Balance — 2025
+                </h3>
+              </div>
+
+              {/* Table */}
+              <table className="w-full text-left">
+                <thead className="bg-[#FAF9F6] text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
+                  <tr>
+                    <th className="px-8 py-4">Worker</th>
+                    <th className="px-6 py-4">Entitlement</th>
+                    <th className="px-6 py-4">Used</th>
+                    <th className="px-6 py-4">Remaining</th>
+                    <th className="px-8 py-4 text-left">Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                  {calculatedBalances.map((bal, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/40 transition-colors">
+                      <td className="px-8 py-5 font-bold text-slate-800">
+                        {bal.worker}
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="text-slate-800">{bal.entitlement}</span>{" "}
+                        <span className="text-slate-400 font-normal">days</span>
+                      </td>
+                      <td className="px-6 py-5 text-amber-700 font-bold">
+                        <span>{bal.used}</span>{" "}
+                        <span className="text-slate-400 font-normal">days</span>
+                      </td>
+                      <td className="px-6 py-5 text-emerald-600 font-bold">
+                        <span>{bal.remaining}</span>{" "}
+                        <span className="text-slate-400 font-normal">days</span>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="w-48">
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              style={{ width: `${bal.pctUsed}%` }}
+                              className="h-full bg-brand-gold rounded-full"
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-medium mt-1 block">
+                            {bal.pctUsed}% used
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
         {/* --- LEAVE REQUEST MODAL --- */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden p-8">
-              <h3 className="text-lg font-bold text-slate-800 mb-6">
-                Submit Leave Request
-              </h3>
-              <form onSubmit={submitRequest} className="space-y-4">
-                <select
-                  name="worker_id"
-                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
-                  required
-                >
-                  <option value="">Select Worker</option>
-                  {workers.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  name="type"
-                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
-                >
-                  <option>Annual</option>
-                  <option>Sick</option>
-                  <option>Emergency</option>
-                </select>
-                <input
-                  type="date"
-                  name="from_date"
-                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
-                  required
-                />
-                <input
-                  type="date"
-                  name="to_date"
-                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
-                  required
-                />
-                <input
-                  type="number"
-                  name="days"
-                  placeholder="Total Days"
-                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm"
-                  required
-                />
-                <textarea
-                  name="reason"
-                  placeholder="Reason..."
-                  className="w-full p-3 bg-slate-50 border rounded-xl text-sm h-20"
-                  required
-                ></textarea>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 text-left border border-slate-100">
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/20">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">Submit Leave Request</h3>
+                  <p className="text-[11px] text-slate-400 font-medium">Create a new worker leave application</p>
+                </div>
                 <button
-                  type="submit"
-                  className="w-full py-3 bg-brand-gold text-white rounded-xl font-bold text-xs"
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="p-2 hover:bg-slate-100 rounded-full cursor-pointer text-slate-400"
                 >
-                  Submit
+                  <X size={18} />
                 </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={submitRequest} className="p-6 space-y-4">
+                {/* Select Worker */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                    Select Worker
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="worker_id"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-brand-gold text-xs font-bold appearance-none cursor-pointer"
+                      required
+                    >
+                      <option value="">Choose Worker...</option>
+                      {workers.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name} ({w.display_id || "No ID"})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={14}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Leave Type */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                    Leave Type
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="type"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-brand-gold text-xs font-bold appearance-none cursor-pointer"
+                    >
+                      <option value="Annual">Annual Leave</option>
+                      <option value="Sick">Sick Leave</option>
+                      <option value="Emergency">Emergency Leave</option>
+                    </select>
+                    <ChevronDown
+                      size={14}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Dates & Days Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      required
+                      type="date"
+                      name="from_date"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-brand-gold text-xs font-bold transition-all"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                      End Date
+                    </label>
+                    <input
+                      required
+                      type="date"
+                      name="to_date"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-brand-gold text-xs font-bold transition-all"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Total Days */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                    Total Days (Auto Calculated)
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    name="days"
+                    placeholder="Total Days"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-brand-gold text-xs font-bold transition-all"
+                    value={daysCount}
+                    onChange={(e) => setDaysCount(e.target.value)}
+                  />
+                </div>
+
+                {/* Reason */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                    Reason / Details
+                  </label>
+                  <textarea
+                    required
+                    name="reason"
+                    placeholder="Provide details for this leave application..."
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-brand-gold text-xs font-bold transition-all h-20 resize-none"
+                  ></textarea>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-slate-100 mt-6">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="flex-1 py-2.5 border border-slate-200 text-slate-500 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer text-center"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-brand-gold text-white rounded-xl text-xs font-bold hover:brightness-110 transition-all cursor-pointer shadow-md shadow-brand-gold/10 text-center"
+                  >
+                    Submit Request
+                  </button>
+                </div>
               </form>
             </div>
           </div>

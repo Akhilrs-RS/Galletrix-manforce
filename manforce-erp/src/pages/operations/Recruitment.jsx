@@ -14,6 +14,7 @@ export default function Recruitment({ role = "admin" }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [candidates, setCandidates] = useState([]);
+  const [activeDragOverStage, setActiveDragOverStage] = useState(null);
 
   const stages = ["Applied", "Screening", "Interview", "Offer", "Hired"];
 
@@ -57,6 +58,38 @@ export default function Recruitment({ role = "admin" }) {
         fetchCandidates();
       } catch (err) {
         console.error("Update error:", err);
+      }
+    }
+  };
+
+  const handleDragStart = (e, candidateId) => {
+    e.dataTransfer.setData("text/plain", candidateId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDragEnter = (stage) => {
+    setActiveDragOverStage(stage);
+  };
+
+  const handleDragLeave = () => {
+    setActiveDragOverStage(null);
+  };
+
+  const handleDrop = async (e, targetStage) => {
+    e.preventDefault();
+    setActiveDragOverStage(null);
+    const candidateId = e.dataTransfer.getData("text/plain");
+    const candidate = candidates.find((c) => String(c.id) === String(candidateId));
+    if (candidate && candidate.stage !== targetStage) {
+      try {
+        await api.patch(`/recruitment/${candidateId}`, { stage: targetStage });
+        fetchCandidates();
+      } catch (err) {
+        console.error("Drop update error:", err);
       }
     }
   };
@@ -115,7 +148,18 @@ export default function Recruitment({ role = "admin" }) {
         {/* --- KANBAN PIPELINE VIEW --- */}
         <div className="grid grid-cols-5 gap-4 h-full items-start">
           {stages.map((stage) => (
-            <div key={stage} className="space-y-4">
+            <div
+              key={stage}
+              onDragOver={handleDragOver}
+              onDragEnter={() => handleDragEnter(stage)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, stage)}
+              className={`space-y-4 p-2 rounded-2xl transition-all duration-200 border-2 border-transparent ${
+                activeDragOverStage === stage
+                  ? "bg-slate-100/60 border-dashed border-brand-gold/40 shadow-inner"
+                  : ""
+              }`}
+            >
               {/* Stage Header */}
               <div className="flex items-center justify-between px-2">
                 <div className="flex items-center gap-2">
@@ -132,13 +176,15 @@ export default function Recruitment({ role = "admin" }) {
               </div>
 
               {/* Candidate Cards */}
-              <div className="space-y-3">
+              <div className="space-y-3 min-h-[450px]">
                 {filteredCandidates
                   .filter((c) => c.stage === stage)
                   .map((c) => (
                     <div
                       key={c.id}
-                      className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-3 transition-all hover:border-brand-gold/40 group"
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, c.id)}
+                      className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-3 transition-all hover:border-brand-gold/40 group cursor-grab active:cursor-grabbing hover:shadow-md"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white text-[10px] font-bold">
@@ -176,6 +222,7 @@ export default function Recruitment({ role = "admin" }) {
                           {/* Back Arrow */}
                           {stage !== "Applied" && (
                             <button
+                              type="button"
                               onClick={() => moveCandidate(c.id, -1)}
                               className="bg-slate-100 text-slate-400 p-1 rounded hover:bg-slate-200 transition-all cursor-pointer"
                             >
@@ -190,6 +237,7 @@ export default function Recruitment({ role = "admin" }) {
                             </span>
                           ) : (
                             <button
+                              type="button"
                               onClick={() => moveCandidate(c.id, 1)}
                               className="bg-brand-gold/10 text-brand-gold p-1 rounded hover:bg-brand-gold hover:text-white transition-all cursor-pointer"
                             >

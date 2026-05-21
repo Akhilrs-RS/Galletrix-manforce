@@ -255,6 +255,38 @@ export default function Payroll({ role }) {
           </table>
         </div>
 
+        {/* --- QUICK PAYSLIP GENERATOR --- */}
+        <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm max-w-xl">
+          <h3 className="text-[13px] font-bold text-slate-800 uppercase tracking-widest mb-6 text-left">
+            Quick Payslip Generator
+          </h3>
+          <div className="space-y-4 text-left">
+            <div className="relative">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 block mb-2">
+                Worker Selection
+              </label>
+              <div className="relative">
+                <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none outline-none focus:border-brand-gold cursor-pointer">
+                  <option>All Workers (Batch)</option>
+                  {payrollData.map((p, i) => (
+                    <option key={i}>{p.name}</option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={16}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => triggerNotify("Payslips generated successfully!")}
+              className="w-full bg-brand-gold text-white font-bold py-3 rounded-xl shadow-lg shadow-brand-gold/20 hover:brightness-110 transition-all text-xs cursor-pointer"
+            >
+              Generate Monthly Payslips
+            </button>
+          </div>
+        </div>
+
         {/* --- FULLY OPERATIONAL OT EDIT MODAL (Fixed) --- */}
         {showOTModal && selectedWorker && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">

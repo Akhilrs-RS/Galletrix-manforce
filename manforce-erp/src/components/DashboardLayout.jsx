@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Users,
   Briefcase,
-  Truck,
   CalendarCheck,
   UserCheck,
   ClipboardList,
@@ -18,17 +17,17 @@ import {
   UserCircle,
   Receipt,
   Target,
+  Coins,
 } from "lucide-react";
 
 // Optimized SidebarItem with tighter padding for no-scroll layout
 const SidebarItem = ({ icon: Icon, label, active, badge, onClick }) => (
   <div
     onClick={onClick}
-    className={`flex items-center justify-between px-6 py-1.5 cursor-pointer transition-all duration-200 ${
-      active
-        ? "bg-[#1e293b] border-r-4 border-brand-gold"
-        : "hover:bg-slate-800"
-    }`}
+    className={`flex items-center justify-between px-6 py-1.5 cursor-pointer transition-all duration-200 ${active
+      ? "bg-[#1e293b] border-r-4 border-brand-gold"
+      : "hover:bg-slate-800"
+      }`}
   >
     <div className="flex items-center gap-3">
       <Icon
@@ -49,14 +48,14 @@ const SidebarItem = ({ icon: Icon, label, active, badge, onClick }) => (
   </div>
 );
 
-export default function DashboardLayout({ children, role }) {
+export default function DashboardLayout({ children, role, headerActions }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   // Use localStorage for persistence across navigations
   const savedRole = localStorage.getItem("userRole");
   const currentRole = role || savedRole || "admin";
-  
+
   const isHR = currentRole === "hr";
   const isSupervisor = currentRole === "supervisor";
   const isWorker = currentRole === "worker";
@@ -78,6 +77,7 @@ export default function DashboardLayout({ children, role }) {
     if (path.includes("leaves")) return "My Leaves";
     if (path.includes("financials")) return "Financial Overview";
     if (path === "crm") return "CRM";
+    if (path === "expenses") return "Expense & Credits";
 
     return path.replace("-", " ") || "Home";
   };
@@ -165,6 +165,12 @@ export default function DashboardLayout({ children, role }) {
                 active={location.pathname === "/invoices"}
                 onClick={() => navigate("/invoices")}
               />
+              <SidebarItem
+                icon={Coins}
+                label="Expense & Credits"
+                active={location.pathname === "/expenses"}
+                onClick={() => navigate("/expenses")}
+              />
             </>
           )}
 
@@ -229,16 +235,6 @@ export default function DashboardLayout({ children, role }) {
                 }
               />
 
-              {(isAdmin || isSupervisor) && (
-                <SidebarItem
-                  icon={Truck}
-                  label="Deployment"
-                  active={location.pathname.includes("deployment")}
-                  onClick={() =>
-                    navigate(isSupervisor ? "/sv-deployment" : "/deployment")
-                  }
-                />
-              )}
               {isAdmin && (
                 <SidebarItem
                   icon={Briefcase}
@@ -293,9 +289,15 @@ export default function DashboardLayout({ children, role }) {
                       />
                       <SidebarItem
                         icon={FileText}
-                        label="Invoices"
+                        label="Invoices & Receipts"
                         active={location.pathname === "/invoices"}
                         onClick={() => navigate("/invoices")}
+                      />
+                      <SidebarItem
+                        icon={Coins}
+                        label="Expense & Credits"
+                        active={location.pathname === "/expenses"}
+                        onClick={() => navigate("/expenses")}
                       />
                     </>
                   )}
@@ -398,14 +400,18 @@ export default function DashboardLayout({ children, role }) {
             {getPageTitle()}
           </h2>
           <div className="flex items-center gap-4">
+            {headerActions}
+            <div className="relative p-1.5 text-red-500 hover:text-red-600 cursor-pointer transition-colors flex items-center justify-center">
+              <Bell size={18} className="stroke-[2.5]" />
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+            </div>
             <div
-              className={`px-3 py-1 rounded-full text-[10px] font-bold border ${
-                isAccounts
-                  ? "bg-purple-50 text-purple-600 border-purple-100"
-                  : isHR
-                    ? "bg-blue-50 text-blue-600 border-blue-100"
-                    : "bg-amber-50 text-amber-600 border-amber-100"
-              }`}
+              className={`px-3 py-1 rounded-full text-[10px] font-bold border ${isAccounts
+                ? "bg-purple-50 text-purple-600 border-purple-100"
+                : isHR
+                  ? "bg-blue-50 text-blue-600 border-blue-100"
+                  : "bg-amber-50 text-amber-600 border-amber-100"
+                }`}
             >
               {isWorker
                 ? "Worker Portal"
@@ -416,12 +422,6 @@ export default function DashboardLayout({ children, role }) {
                     : isAccounts
                       ? "Accounts Portal"
                       : "Admin Access"}
-            </div>
-            <div className="relative p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-brand-gold cursor-pointer transition-colors">
-              <Bell size={18} />
-              <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-red-500 text-[8px] text-white flex items-center justify-center rounded-full border-2 border-white font-bold">
-                5
-              </span>
             </div>
           </div>
         </header>
