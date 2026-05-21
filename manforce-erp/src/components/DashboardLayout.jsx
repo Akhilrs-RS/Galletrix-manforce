@@ -78,6 +78,7 @@ export default function DashboardLayout({ children, role, headerActions }) {
     if (path.includes("financials")) return "Financial Overview";
     if (path === "crm") return "CRM";
     if (path === "expenses") return "Expense & Credits";
+    if (path === "invoices") return "Invoice & Receipts";
 
     return path.replace("-", " ") || "Home";
   };
