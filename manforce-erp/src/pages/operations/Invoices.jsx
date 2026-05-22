@@ -19,6 +19,30 @@ import {
 } from "lucide-react";
 import api from "../../utils/api";
 
+const clientAddressMap = {
+  "Al Futtaim Group": "500 Shopping Center ,Dubai,UAE",
+  "Emaar Properties": "Downtown Dubai",
+  "DAMAC Properties": "Damac Hills",
+  "DP World": "Jebel Ali Port, Dubai, UAE"
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return "";
+  if (dateStr.includes("-")) {
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  return dateStr;
+};
+
+const getTodayDateString = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function Invoices({ role }) {
   // --- 1. STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState("invoices"); // "invoices" | "receipts" | "history"
@@ -105,12 +129,12 @@ export default function Invoices({ role }) {
   // Defaults set exactly to mockup values for wow-effect on first look
   const [invoiceForm, setInvoiceForm] = useState({
     documentNumber: "INV/2026/05/026",
-    date: "20/05/2026",
+    date: getTodayDateString(),
     clientName: "Al Futtaim Group",
     siteAddress: "500 Shopping Center ,Dubai,UAE",
     projectTitle: "Retails Store Setup",
-    discount: "500.00",
-    amountReceived: "00.00",
+    discount: "",
+    amountReceived: "",
     workItems: [
       { id: 1, description: "False Celling(Gypsum Board)", quantity: "120.00", price: "85.00", total: 10200.00 },
       { id: 2, description: "Bedroom Interior Setup", quantity: "1.00", price: "18500.00", total: 18500.00 },
@@ -121,13 +145,37 @@ export default function Invoices({ role }) {
   // --- FORM STATE (RECEIPT CREATOR) ---
   const [receiptForm, setReceiptForm] = useState({
     documentNumber: "REC/2026/05/012",
-    date: "21/05/2026",
+    date: getTodayDateString(),
     clientName: "Al Futtaim Group",
     invoiceRef: "INV/2026/05/026",
-    amountPaid: "10000.00",
+    amountPaid: "",
     paymentMethod: "Bank Transfer",
-    notes: "Part payment for false ceiling work"
+    notes: ""
   });
+
+  const getClientAddress = (clientName) => {
+    if (!clientName) return "";
+    const cleanName = clientName.trim().toLowerCase();
+    const mapped = Object.keys(clientAddressMap).find(k => k.toLowerCase() === cleanName);
+    if (mapped) {
+      return clientAddressMap[mapped];
+    }
+    const matchedInvoice = invoices.find(inv => inv.client.toLowerCase() === cleanName);
+    if (matchedInvoice && matchedInvoice.siteAddress) {
+      return matchedInvoice.siteAddress;
+    }
+    return "";
+  };
+
+  const getClientProjectTitle = (clientName) => {
+    if (!clientName) return "";
+    const cleanName = clientName.trim().toLowerCase();
+    const matchedInvoice = invoices.find(inv => inv.client.toLowerCase() === cleanName);
+    if (matchedInvoice && matchedInvoice.projectTitle) {
+      return matchedInvoice.projectTitle;
+    }
+    return "";
+  };
 
   // Load clients from API on mount
   useEffect(() => {
@@ -137,10 +185,17 @@ export default function Invoices({ role }) {
         setClientsList(res.data || []);
         if (res.data && res.data.length > 0) {
           // If loaded successfully, update forms' client selector if not already edited
-          setInvoiceForm((prev) => ({
-            ...prev,
-            clientName: prev.clientName || res.data[0].name
-          }));
+          setInvoiceForm((prev) => {
+            const clientName = prev.clientName || res.data[0].name;
+            const siteAddress = prev.siteAddress || getClientAddress(clientName);
+            const projectTitle = prev.projectTitle || getClientProjectTitle(clientName);
+            return {
+              ...prev,
+              clientName,
+              siteAddress,
+              projectTitle
+            };
+          });
           setReceiptForm((prev) => ({
             ...prev,
             clientName: prev.clientName || res.data[0].name
@@ -151,7 +206,7 @@ export default function Invoices({ role }) {
       }
     };
     fetchClients();
-  }, []);
+  }, [invoices]);
 
   // Update receipt invoice references when selected client changes
   useEffect(() => {
@@ -162,7 +217,7 @@ export default function Invoices({ role }) {
       setReceiptForm((prev) => ({
         ...prev,
         invoiceRef: clientInvoices[0].id,
-        amountPaid: (clientInvoices[0].amt - clientInvoices[0].amountReceived - clientInvoices[0].discount).toString()
+        amountPaid: ""
       }));
     } else {
       setReceiptForm((prev) => ({
@@ -172,6 +227,32 @@ export default function Invoices({ role }) {
       }));
     }
   }, [receiptForm.clientName, invoices]);
+
+  // Suggestions states
+  const [showInvoiceSuggestions, setShowInvoiceSuggestions] = useState(false);
+  const [showReceiptSuggestions, setShowReceiptSuggestions] = useState(false);
+
+  const allSavedClients = useMemo(() => {
+    return clientsList.length > 0
+      ? clientsList.map((c) => c.name)
+      : ["Al Futtaim Group", "Emaar Properties", "DAMAC Properties", "DP World"];
+  }, [clientsList]);
+
+  const invoiceSuggestions = useMemo(() => {
+    const val = (invoiceForm.clientName || "").toLowerCase().trim();
+    return allSavedClients.filter((name) =>
+      name.toLowerCase().includes(val)
+    );
+  }, [invoiceForm.clientName, allSavedClients]);
+
+  const receiptSuggestions = useMemo(() => {
+    const val = (receiptForm.clientName || "").toLowerCase().trim();
+    return allSavedClients.filter((name) =>
+      name.toLowerCase().includes(val)
+    );
+  }, [receiptForm.clientName, allSavedClients]);
+
+
 
   // Toast notifier helper
   const triggerNotify = (msg) => {
@@ -244,19 +325,38 @@ export default function Invoices({ role }) {
     }));
   };
 
+  const handleClearAllItems = () => {
+    setInvoiceForm((prev) => ({
+      ...prev,
+      workItems: []
+    }));
+    triggerNotify("All work items cleared!");
+  };
+
   // --- ACTIONS HANDLERS ---
   const handleSaveInvoiceDraft = () => {
     triggerNotify("Invoice Draft saved successfully!");
   };
 
   const handleGenerateInvoice = () => {
-    const invoiceId = `INV/2026/05/${String(invoices.length + 1).padStart(3, "0")}`;
+    const lastInvoice = invoices[0];
+    let nextNum = invoices.length + 1;
+    if (lastInvoice && lastInvoice.id.includes("/")) {
+      const parts = lastInvoice.id.split("/");
+      const lastPart = parseInt(parts[parts.length - 1]);
+      if (!isNaN(lastPart)) {
+        nextNum = lastPart + 1;
+      }
+    }
+    const invoiceId = `INV/2026/05/${String(nextNum).padStart(3, "0")}`;
+    
+    const defaultClient = clientsList[0]?.name || "Al Futtaim Group";
     const newInvoiceObj = {
       id: invoiceId,
       client: invoiceForm.clientName,
       projectTitle: invoiceForm.projectTitle,
       siteAddress: invoiceForm.siteAddress,
-      date: invoiceForm.date,
+      date: formatDate(invoiceForm.date) || "N/A",
       amt: subtotal,
       discount: parseFloat(invoiceForm.discount) || 0,
       amountReceived: parseFloat(invoiceForm.amountReceived) || 0,
@@ -278,11 +378,11 @@ export default function Invoices({ role }) {
 
     // Reset Form for next input
     setInvoiceForm({
-      documentNumber: `INV/2026/05/${String(invoices.length + 2).padStart(3, "0")}`,
-      date: new Date().toLocaleDateString("en-GB"),
-      clientName: clientsList[0]?.name || "Al Futtaim Group",
-      siteAddress: "",
-      projectTitle: "",
+      documentNumber: `INV/2026/05/${String(nextNum + 1).padStart(3, "0")}`,
+      date: getTodayDateString(),
+      clientName: defaultClient,
+      siteAddress: getClientAddress(defaultClient),
+      projectTitle: getClientProjectTitle(defaultClient),
       discount: "0.00",
       amountReceived: "0.00",
       workItems: [
@@ -292,13 +392,23 @@ export default function Invoices({ role }) {
   };
 
   const handleGenerateReceipt = () => {
-    const receiptId = `REC/2026/05/${String(receipts.length + 1).padStart(3, "0")}`;
+    const lastReceipt = receipts[0];
+    let nextNum = receipts.length + 1;
+    if (lastReceipt && lastReceipt.id.includes("/")) {
+      const parts = lastReceipt.id.split("/");
+      const lastPart = parseInt(parts[parts.length - 1]);
+      if (!isNaN(lastPart)) {
+        nextNum = lastPart + 1;
+      }
+    }
+    const receiptId = `REC/2026/05/${String(nextNum).padStart(3, "0")}`;
+    
     const newReceiptObj = {
       id: receiptId,
       client: receiptForm.clientName,
       invoiceRef: receiptForm.invoiceRef,
       amt: receiptSubtotal,
-      date: receiptForm.date,
+      date: formatDate(receiptForm.date) || "N/A",
       paymentMethod: receiptForm.paymentMethod,
       notes: receiptForm.notes
     };
@@ -330,8 +440,8 @@ export default function Invoices({ role }) {
 
     // Reset Receipt Form
     setReceiptForm({
-      documentNumber: `REC/2026/05/${String(receipts.length + 2).padStart(3, "0")}`,
-      date: new Date().toLocaleDateString("en-GB"),
+      documentNumber: `REC/2026/05/${String(nextNum + 1).padStart(3, "0")}`,
+      date: getTodayDateString(),
       clientName: clientsList[0]?.name || "Al Futtaim Group",
       invoiceRef: "",
       amountPaid: "0.00",
@@ -478,7 +588,7 @@ export default function Invoices({ role }) {
                       Date
                     </label>
                     <input
-                      type="text"
+                      type="date"
                       className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-xs font-medium text-slate-700 shadow-sm"
                       value={invoiceForm.date}
                       onChange={(e) => setInvoiceForm({ ...invoiceForm, date: e.target.value })}
@@ -487,33 +597,59 @@ export default function Invoices({ role }) {
 
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
-                      Client Name
+                      Client Name/ Organisation Name
                     </label>
                     <div className="relative">
-                      <select
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-xs font-medium text-slate-700 shadow-sm appearance-none cursor-pointer"
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-xs font-semibold text-slate-700 shadow-sm transition-all"
+                        placeholder="Type or select client name/ organisation name..."
                         value={invoiceForm.clientName}
-                        onChange={(e) => setInvoiceForm({ ...invoiceForm, clientName: e.target.value })}
-                      >
-                        {clientsList.length > 0 ? (
-                          clientsList.map((c) => (
-                            <option key={c.id} value={c.name}>
-                              {c.name}
-                            </option>
-                          ))
-                        ) : (
-                          <>
-                            <option value="Al Futtaim Group">Al Futtaim Group</option>
-                            <option value="Emaar Properties">Emaar Properties</option>
-                            <option value="DAMAC Properties">DAMAC Properties</option>
-                            <option value="DP World">DP World</option>
-                          </>
-                        )}
-                      </select>
+                        onChange={(e) => {
+                          const newClientName = e.target.value;
+                          const matchedClient = allSavedClients.find(
+                            (c) => c.toLowerCase() === newClientName.trim().toLowerCase()
+                          );
+                          const address = matchedClient ? getClientAddress(matchedClient) : "";
+                          const projectTitle = matchedClient ? getClientProjectTitle(matchedClient) : "";
+                          setInvoiceForm({
+                            ...invoiceForm,
+                            clientName: newClientName,
+                            siteAddress: address,
+                            projectTitle: projectTitle || invoiceForm.projectTitle
+                          });
+                        }}
+                        onFocus={() => setShowInvoiceSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowInvoiceSuggestions(false), 200)}
+                      />
                       <ChevronDown
                         size={14}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                       />
+
+                      {showInvoiceSuggestions && invoiceSuggestions.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl divide-y divide-slate-100/60 transition-all">
+                          {invoiceSuggestions.map((clientName, index) => (
+                            <div
+                              key={index}
+                              onClick={() => {
+                                const address = getClientAddress(clientName);
+                                const projectTitle = getClientProjectTitle(clientName);
+                                setInvoiceForm({
+                                  ...invoiceForm,
+                                  clientName,
+                                  siteAddress: address,
+                                  projectTitle: projectTitle || ""
+                                });
+                                setShowInvoiceSuggestions(false);
+                              }}
+                              className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-brand-gold cursor-pointer transition-all"
+                            >
+                              {clientName}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -553,12 +689,22 @@ export default function Invoices({ role }) {
                     <h3 className="text-sm font-bold text-slate-800">Work Items</h3>
                   </div>
 
-                  <button
-                    onClick={handleAddItem}
-                    className="border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-slate-600 transition-all cursor-pointer"
-                  >
-                    <Plus size={13} /> Add Item
-                  </button>
+                  <div className="flex gap-2">
+                    {invoiceForm.workItems.length > 0 && (
+                      <button
+                        onClick={handleClearAllItems}
+                        className="border border-red-200 hover:bg-red-50 hover:text-red-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-red-600 transition-all cursor-pointer shadow-sm"
+                      >
+                        <Trash2 size={13} /> Clear All
+                      </button>
+                    )}
+                    <button
+                      onClick={handleAddItem}
+                      className="border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-slate-600 transition-all cursor-pointer shadow-sm"
+                    >
+                      <Plus size={13} /> Add Item
+                    </button>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto border border-slate-200/60 rounded-xl">
@@ -574,65 +720,73 @@ export default function Invoices({ role }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                      {invoiceForm.workItems.map((item, index) => (
-                        <tr key={item.id} className="hover:bg-slate-50/20 transition-all">
-                          <td className="px-4 py-3 text-center text-slate-400 font-bold">{index + 1}</td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-brand-gold text-xs text-slate-700 shadow-inner"
-                              value={item.description}
-                              onChange={(e) => handleUpdateItem(index, "description", e.target.value)}
-                              placeholder="Enter description..."
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <input
-                              type="text"
-                              className="w-20 text-center px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-brand-gold text-xs text-slate-700 shadow-inner font-medium"
-                              value={item.quantity}
-                              onChange={(e) => handleUpdateItem(index, "quantity", e.target.value)}
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <input
-                              type="text"
-                              className="w-24 text-center px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-brand-gold text-xs text-slate-700 shadow-inner font-medium"
-                              value={item.price}
-                              onChange={(e) => handleUpdateItem(index, "price", e.target.value)}
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <input
-                              disabled
-                              type="text"
-                              className="w-24 text-center px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-500 font-semibold cursor-not-allowed"
-                              value={(parseFloat(item.total) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex gap-2 justify-center">
-                              <button
-                                onClick={() => {
-                                  // Just a focus effect for inline edits
-                                  triggerNotify("Row is ready for inline editing");
-                                }}
-                                className="p-1.5 text-blue-500 hover:bg-blue-50 border border-slate-100 rounded-lg transition-all cursor-pointer"
-                                title="Edit Item"
-                              >
-                                <Edit size={13} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteItem(index)}
-                                className="p-1.5 text-red-500 hover:bg-red-50 border border-slate-100 rounded-lg transition-all cursor-pointer"
-                                title="Delete Item"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
+                      {invoiceForm.workItems.length > 0 ? (
+                        invoiceForm.workItems.map((item, index) => (
+                          <tr key={item.id} className="hover:bg-slate-50/20 transition-all">
+                            <td className="px-4 py-3 text-center text-slate-400 font-bold">{index + 1}</td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-brand-gold text-xs text-slate-700 shadow-inner"
+                                value={item.description}
+                                onChange={(e) => handleUpdateItem(index, "description", e.target.value)}
+                                placeholder="Enter description..."
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <input
+                                type="text"
+                                className="w-20 text-center px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-brand-gold text-xs text-slate-700 shadow-inner font-medium"
+                                value={item.quantity}
+                                onChange={(e) => handleUpdateItem(index, "quantity", e.target.value)}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <input
+                                type="text"
+                                className="w-24 text-center px-2 py-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-brand-gold text-xs text-slate-700 shadow-inner font-medium"
+                                value={item.price}
+                                onChange={(e) => handleUpdateItem(index, "price", e.target.value)}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <input
+                                disabled
+                                type="text"
+                                className="w-24 text-center px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-500 font-semibold cursor-not-allowed"
+                                value={(parseFloat(item.total) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex gap-2 justify-center">
+                                <button
+                                  onClick={() => {
+                                    // Just a focus effect for inline edits
+                                    triggerNotify("Row is ready for inline editing");
+                                  }}
+                                  className="p-1.5 text-blue-500 hover:bg-blue-50 border border-slate-100 rounded-lg transition-all cursor-pointer"
+                                  title="Edit Item"
+                                >
+                                  <Edit size={13} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteItem(index)}
+                                  className="p-1.5 text-red-500 hover:bg-red-50 border border-slate-100 rounded-lg transition-all cursor-pointer"
+                                  title="Delete Item"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="px-4 py-8 text-center text-slate-400 font-medium bg-slate-50/10">
+                            No work items added. Click "Add Item" to add work details.
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -680,25 +834,6 @@ export default function Invoices({ role }) {
                       value={invoiceForm.amountReceived}
                       onChange={(e) => setInvoiceForm({ ...invoiceForm, amountReceived: e.target.value })}
                     />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
-                      Payment Status
-                    </label>
-                    <div className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center min-h-[42px] shadow-inner">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                          paymentStatus === "Paid"
-                            ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                            : paymentStatus === "Partially Paid"
-                            ? "bg-blue-50 text-blue-600 border-blue-100"
-                            : "bg-amber-50 text-amber-600 border-amber-100"
-                        }`}
-                      >
-                        {paymentStatus}
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -758,7 +893,7 @@ export default function Invoices({ role }) {
                         client: invoiceForm.clientName,
                         projectTitle: invoiceForm.projectTitle,
                         siteAddress: invoiceForm.siteAddress,
-                        date: invoiceForm.date,
+                        date: formatDate(invoiceForm.date) || "N/A",
                         amt: subtotal,
                         discount: parseFloat(invoiceForm.discount) || 0,
                         amountReceived: parseFloat(invoiceForm.amountReceived) || 0,
@@ -827,7 +962,7 @@ export default function Invoices({ role }) {
                       Date
                     </label>
                     <input
-                      type="text"
+                      type="date"
                       className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-xs font-medium text-slate-700 shadow-sm"
                       value={receiptForm.date}
                       onChange={(e) => setReceiptForm({ ...receiptForm, date: e.target.value })}
@@ -836,33 +971,39 @@ export default function Invoices({ role }) {
 
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">
-                      Client Name
+                      Client Name/ Organisation Name
                     </label>
                     <div className="relative">
-                      <select
-                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-xs font-medium text-slate-700 shadow-sm appearance-none cursor-pointer"
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-gold text-xs font-semibold text-slate-700 shadow-sm transition-all"
+                        placeholder="Type or select client name/ organisation name..."
                         value={receiptForm.clientName}
                         onChange={(e) => setReceiptForm({ ...receiptForm, clientName: e.target.value })}
-                      >
-                        {clientsList.length > 0 ? (
-                          clientsList.map((c) => (
-                            <option key={c.id} value={c.name}>
-                              {c.name}
-                            </option>
-                          ))
-                        ) : (
-                          <>
-                            <option value="Al Futtaim Group">Al Futtaim Group</option>
-                            <option value="Emaar Properties">Emaar Properties</option>
-                            <option value="DAMAC Properties">DAMAC Properties</option>
-                            <option value="DP World">DP World</option>
-                          </>
-                        )}
-                      </select>
+                        onFocus={() => setShowReceiptSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowReceiptSuggestions(false), 200)}
+                      />
                       <ChevronDown
                         size={14}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                       />
+
+                      {showReceiptSuggestions && receiptSuggestions.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl divide-y divide-slate-100/60 transition-all">
+                          {receiptSuggestions.map((clientName, index) => (
+                            <div
+                              key={index}
+                              onClick={() => {
+                                setReceiptForm({ ...receiptForm, clientName });
+                                setShowReceiptSuggestions(false);
+                              }}
+                              className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-brand-gold cursor-pointer transition-all"
+                            >
+                              {clientName}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -876,11 +1017,10 @@ export default function Invoices({ role }) {
                         value={receiptForm.invoiceRef}
                         onChange={(e) => {
                           const val = e.target.value;
-                          const invMatch = invoices.find(i => i.id === val);
                           setReceiptForm({
                             ...receiptForm,
                             invoiceRef: val,
-                            amountPaid: invMatch ? (invMatch.amt - invMatch.amountReceived - invMatch.discount).toString() : ""
+                            amountPaid: ""
                           });
                         }}
                       >
@@ -971,7 +1111,7 @@ export default function Invoices({ role }) {
 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-xs text-slate-500 font-semibold">
-                    <span>Client Name</span>
+                    <span>Client Name/ Organisation Name</span>
                     <span className="text-slate-800 font-bold text-right truncate max-w-[150px]">
                       {receiptForm.clientName}
                     </span>
@@ -1007,7 +1147,7 @@ export default function Invoices({ role }) {
                         client: receiptForm.clientName,
                         invoiceRef: receiptForm.invoiceRef,
                         amt: receiptSubtotal,
-                        date: receiptForm.date,
+                        date: formatDate(receiptForm.date) || "N/A",
                         paymentMethod: receiptForm.paymentMethod,
                         notes: receiptForm.notes
                       });
