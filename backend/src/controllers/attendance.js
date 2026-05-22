@@ -30,3 +30,58 @@ exports.markAttendance = async (req, res, next) => {
     }
   } catch (err) { next(err); }
 };
+
+exports.clearAttendance = async (req, res, next) => {
+  try {
+    const { date, worker_id } = req.query;
+    if (!date) {
+      return res.status(400).json({ error: 'Date parameter is required' });
+    }
+    
+    let query = db('attendance').where({ date });
+    if (worker_id) {
+      query = query.where({ worker_id });
+    }
+    
+    await query.delete();
+    res.json({ message: 'Attendance cleared' });
+  } catch (err) { next(err); }
+};
+
+exports.bulkMarkAttendance = async (req, res, next) => {
+  try {
+    const { date, records } = req.body;
+    if (!date || !Array.isArray(records)) {
+      return res.status(400).json({ error: 'Date and records array are required' });
+    }
+
+    await db.transaction(async (trx) => {
+      for (const record of records) {
+        const { worker_id, status, check_in, check_out, ot_hours } = record;
+        
+        // Find existing record
+        const existing = await trx('attendance').where({ worker_id, date }).first();
+        
+        if (existing) {
+          await trx('attendance').where({ id: existing.id }).update({
+            status,
+            check_in: check_in || null,
+            check_out: check_out || null,
+            ot_hours: ot_hours || 0
+          });
+        } else {
+          await trx('attendance').insert({
+            worker_id,
+            date,
+            status,
+            check_in: check_in || null,
+            check_out: check_out || null,
+            ot_hours: ot_hours || 0
+          });
+        }
+      }
+    });
+
+    res.json({ message: 'Bulk attendance marked' });
+  } catch (err) { next(err); }
+};

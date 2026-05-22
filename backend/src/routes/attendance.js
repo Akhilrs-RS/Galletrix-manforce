@@ -11,14 +11,8 @@ const auth = require('../middleware/auth');
  *     tags: [Attendance]
  */
 router.get('/', auth, attendanceController.getAll);
-
-/**
- * @openapi
- * /api/attendance:
- *   post:
- *     summary: Mark or update attendance
- *     tags: [Attendance]
- */
 router.post('/', auth, attendanceController.markAttendance);
+router.delete('/', auth, attendanceController.clearAttendance);
+router.post('/bulk', auth, attendanceController.bulkMarkAttendance);
 
 module.exports = router;

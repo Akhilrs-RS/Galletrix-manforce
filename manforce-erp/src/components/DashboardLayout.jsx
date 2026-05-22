@@ -51,6 +51,7 @@ const SidebarItem = ({ icon: Icon, label, active, badge, onClick }) => (
 export default function DashboardLayout({ children, role, headerActions }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isQuickActionOpen, setIsQuickActionOpen] = React.useState(false);
 
   // Use localStorage for persistence across navigations
   const savedRole = localStorage.getItem("userRole");
@@ -396,36 +397,154 @@ export default function DashboardLayout({ children, role, headerActions }) {
       </aside>
 
       <main className="flex-1 overflow-y-auto bg-[#FDFBF7]">
-        <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-          <h2 className="text-xl font-bold text-slate-800 capitalize">
-            {getPageTitle()}
-          </h2>
-          <div className="flex items-center gap-4">
-            {headerActions}
-            <div className="relative p-1.5 text-red-500 hover:text-red-600 cursor-pointer transition-colors flex items-center justify-center">
-              <Bell size={18} className="stroke-[2.5]" />
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+        {location.pathname === "/admin-dashboard" ? (
+          <header className="bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between sticky top-0 z-30">
+            <div>
+              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                Dashboard
+              </h2>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                Welcome back admin
+              </p>
             </div>
-            <div
-              className={`px-3 py-1 rounded-full text-[10px] font-bold border ${isAccounts
-                ? "bg-purple-50 text-purple-600 border-purple-100"
-                : isHR
-                  ? "bg-blue-50 text-blue-600 border-blue-100"
-                  : "bg-amber-50 text-amber-600 border-amber-100"
-                }`}
-            >
-              {isWorker
-                ? "Worker Portal"
-                : isHR
-                  ? "HR Portal"
-                  : isSupervisor
-                    ? "Site Supervisor"
-                    : isAccounts
-                      ? "Accounts Portal"
-                      : "Admin Access"}
+            <div className="flex items-center gap-4">
+              {/* Search bar */}
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg
+                    className="h-4 w-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search workers, clients, invoice.."
+                  className="w-64 pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all font-medium text-slate-700 placeholder-slate-400"
+                />
+              </div>
+
+              {/* Quick Action dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsQuickActionOpen(!isQuickActionOpen)}
+                  className="flex items-center gap-2 bg-[#0f172a] text-white text-[11px] font-bold px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
+                >
+                  <span>+ Quick Action</span>
+                  <svg
+                    className={`h-3 w-3 text-slate-300 transition-transform ${isQuickActionOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                {isQuickActionOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-30"
+                      onClick={() => setIsQuickActionOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <button
+                        onClick={() => {
+                          navigate("/workers");
+                          setIsQuickActionOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-bold transition-colors"
+                      >
+                        View Workers
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/invoices");
+                          setIsQuickActionOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-bold transition-colors"
+                      >
+                        Create Invoice
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/crm");
+                          setIsQuickActionOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-bold transition-colors"
+                      >
+                        CRM Activity
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/attendance");
+                          setIsQuickActionOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-bold transition-colors"
+                      >
+                        Record Attendance
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Notification icon */}
+              <div className="relative p-1.5 text-red-500 hover:bg-red-50 rounded-lg cursor-pointer transition-all flex items-center justify-center">
+                <Bell size={18} className="stroke-[2.5]" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+              </div>
+
+              {/* Admin Access pill */}
+              <div className="px-4 py-1.5 rounded-lg text-[10px] font-bold border bg-[#F6EFE5] text-[#8C6D3F] border-[#EADCC8] shadow-sm tracking-wider uppercase">
+                Admin Access
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        ) : (
+          <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+            <h2 className="text-xl font-bold text-slate-800 capitalize">
+              {getPageTitle()}
+            </h2>
+            <div className="flex items-center gap-4">
+              {headerActions}
+              <div className="relative p-1.5 text-red-500 hover:text-red-600 cursor-pointer transition-colors flex items-center justify-center">
+                <Bell size={18} className="stroke-[2.5]" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+              </div>
+              <div
+                className={`px-3 py-1 rounded-full text-[10px] font-bold border ${isAccounts
+                  ? "bg-purple-50 text-purple-600 border-purple-100"
+                  : isHR
+                    ? "bg-blue-50 text-blue-600 border-blue-100"
+                    : "bg-amber-50 text-amber-600 border-amber-100"
+                  }`}
+              >
+                {isWorker
+                  ? "Worker Portal"
+                  : isHR
+                    ? "HR Portal"
+                    : isSupervisor
+                      ? "Site Supervisor"
+                      : isAccounts
+                        ? "Accounts Portal"
+                        : "Admin Access"}
+              </div>
+            </div>
+          </header>
+        )}
         <div className="p-8 max-w-[1600px] mx-auto">{children}</div>
       </main>
     </div>
