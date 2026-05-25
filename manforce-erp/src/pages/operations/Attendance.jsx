@@ -31,6 +31,9 @@ export default function Attendance({ role }) {
   const [savingStates, setSavingStates] = useState({});
   const [focusedValue, setFocusedValue] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  
+  // Selection states
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState([]);
 
   // 1. Fetch data
   const fetchData = async () => {
@@ -50,6 +53,7 @@ export default function Attendance({ role }) {
   };
 
   useEffect(() => {
+    setSelectedWorkerIds([]);
     fetchData();
   }, [selectedDate]);
 
@@ -174,7 +178,108 @@ export default function Attendance({ role }) {
     saveAttendanceRow(workerId, w.status, w.check_in, w.check_out, w.ot_hours);
   };
 
-  // 7. Bulk Handlers
+  // 7. Selection & Bulk Action Handlers
+  const handleSelectRow = (workerId) => {
+    setSelectedWorkerIds((prev) =>
+      prev.includes(workerId)
+        ? prev.filter((id) => id !== workerId)
+        : [...prev, workerId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    const allFilteredIds = filteredWorkers.map((w) => w.id);
+    const allSelected = allFilteredIds.every((id) => selectedWorkerIds.includes(id));
+
+    if (allSelected) {
+      setSelectedWorkerIds((prev) => prev.filter((id) => !allFilteredIds.includes(id)));
+    } else {
+      setSelectedWorkerIds((prev) => {
+        const union = new Set([...prev, ...allFilteredIds]);
+        return Array.from(union);
+      });
+    }
+  };
+
+  const handleBulkMarkSelected = async (clickedStatus) => {
+    if (selectedWorkerIds.length === 0) return;
+
+    setIsBulkLoading(true);
+    const records = selectedWorkerIds.map((id) => {
+      const w = mergedWorkers.find((item) => item.id === id);
+      const checkIn = clickedStatus === "Present" ? (w?.check_in || "08:00") : "";
+      const checkOut = clickedStatus === "Present" ? (w?.check_out || "18:00") : "";
+      const otHours = clickedStatus === "Present" ? (w?.ot_hours || 0) : 0;
+      return {
+        worker_id: id,
+        status: clickedStatus,
+        check_in: checkIn || null,
+        check_out: checkOut || null,
+        ot_hours: otHours || 0,
+      };
+    });
+
+    try {
+      await api.post("/attendance/bulk", {
+        date: selectedDate,
+        records,
+      });
+
+      setMergedWorkers((prev) =>
+        prev.map((w) => {
+          if (selectedWorkerIds.includes(w.id)) {
+            const checkIn = clickedStatus === "Present" ? (w.check_in || "08:00") : "";
+            const checkOut = clickedStatus === "Present" ? (w.check_out || "18:00") : "";
+            const otHours = clickedStatus === "Present" ? (w.ot_hours || 0) : 0;
+            return {
+              ...w,
+              status: clickedStatus,
+              check_in: checkIn,
+              check_out: checkOut,
+              ot_hours: otHours,
+            };
+          }
+          return w;
+        })
+      );
+      setSelectedWorkerIds([]);
+    } catch (err) {
+      console.error("Failed to bulk mark selected workers:", err);
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
+  const handleBulkClearSelected = async () => {
+    if (selectedWorkerIds.length === 0) return;
+
+    setIsBulkLoading(true);
+    try {
+      const idsParam = selectedWorkerIds.join(",");
+      await api.delete(`/attendance?date=${selectedDate}&worker_ids=${idsParam}`);
+
+      setMergedWorkers((prev) =>
+        prev.map((w) => {
+          if (selectedWorkerIds.includes(w.id)) {
+            return {
+              ...w,
+              status: null,
+              check_in: "",
+              check_out: "",
+              ot_hours: 0,
+            };
+          }
+          return w;
+        })
+      );
+      setSelectedWorkerIds([]);
+    } catch (err) {
+      console.error("Failed to clear selected workers:", err);
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
   const handleMarkAllPresent = async () => {
     const unmarked = filteredWorkers.filter((w) => !w.status);
     if (unmarked.length === 0) return;
@@ -230,6 +335,7 @@ export default function Attendance({ role }) {
         }))
       );
       setShowClearConfirm(false);
+      setSelectedWorkerIds([]);
     } catch (err) {
       console.error("Failed to clear attendance:", err);
     } finally {
@@ -301,7 +407,7 @@ export default function Attendance({ role }) {
 
   return (
     <DashboardLayout role={role}>
-      <div className="space-y-6 relative pb-12">
+      <div className="space-y-6 relative pb-20">
         {/* --- DYNAMIC STATS CARDS --- */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {isLoading ? (
@@ -458,6 +564,17 @@ export default function Attendance({ role }) {
               <table className="w-full text-left border-collapse">
                 <thead className="bg-[#FAF9F6] text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
                   <tr>
+                    <th className="px-6 py-4 font-semibold tracking-wider w-[50px] text-center">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredWorkers.length > 0 &&
+                          filteredWorkers.every((w) => selectedWorkerIds.includes(w.id))
+                        }
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 rounded border-slate-300 text-brand-gold focus:ring-brand-gold/20 cursor-pointer accent-brand-gold"
+                      />
+                    </th>
                     <th className="px-6 py-4 font-semibold tracking-wider w-[350px]">Worker Details</th>
                     <th className="px-6 py-4 font-semibold tracking-wider w-[220px]">Mark Status</th>
                     <th className="px-4 py-4 font-semibold tracking-wider w-[140px] text-center">Check In</th>
@@ -470,12 +587,25 @@ export default function Attendance({ role }) {
                   {filteredWorkers.map((worker) => {
                     const isPresent = worker.status === "Present";
                     const rowSyncState = savingStates[worker.id];
+                    const isSelected = selectedWorkerIds.includes(worker.id);
 
                     return (
                       <tr
                         key={worker.id}
-                        className="hover:bg-slate-50/40 transition-colors group"
+                        className={`hover:bg-slate-50/40 transition-colors group ${
+                          isSelected ? "bg-brand-navy/[0.02]" : ""
+                        }`}
                       >
+                        {/* Row Selector Checkbox */}
+                        <td className="px-6 py-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleSelectRow(worker.id)}
+                            className="w-4 h-4 rounded border-slate-300 text-brand-gold focus:ring-brand-gold/20 cursor-pointer accent-brand-gold"
+                          />
+                        </td>
+
                         {/* Worker Identity */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
@@ -610,6 +740,65 @@ export default function Attendance({ role }) {
             )}
           </div>
         </div>
+
+        {/* --- FLOATING ACTION BAR FOR SELECTED WORKERS --- */}
+        {selectedWorkerIds.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3.5 rounded-2xl flex items-center gap-6 shadow-2xl border border-slate-800/80 animate-in slide-in-from-bottom duration-200 w-max max-w-[90%] md:max-w-none">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="w-5 h-5 rounded-full bg-brand-gold text-white text-[10px] font-bold flex items-center justify-center">
+                {selectedWorkerIds.length}
+              </span>
+              <span className="text-[12px] font-bold text-slate-300">selected</span>
+            </div>
+            
+            <div className="h-5 w-[1px] bg-slate-800 shrink-0" />
+
+            <div className="flex items-center gap-2 overflow-x-auto py-1">
+              <button
+                onClick={() => handleBulkMarkSelected("Present")}
+                disabled={isBulkLoading}
+                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <CheckCircle size={12} />
+                Mark Present
+              </button>
+              <button
+                onClick={() => handleBulkMarkSelected("Absent")}
+                disabled={isBulkLoading}
+                className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <XCircle size={12} />
+                Mark Absent
+              </button>
+              <button
+                onClick={() => handleBulkMarkSelected("Leave")}
+                disabled={isBulkLoading}
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <Clock size={12} />
+                Mark Leave
+              </button>
+              <button
+                onClick={handleBulkClearSelected}
+                disabled={isBulkLoading}
+                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-bold text-[11px] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <Trash2 size={12} />
+                Clear
+              </button>
+            </div>
+
+            <div className="h-5 w-[1px] bg-slate-800 shrink-0" />
+
+            <button
+              onClick={() => setSelectedWorkerIds([])}
+              className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
+              title="Deselect all"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        )}
 
         {/* --- CLEAR REGISTER CONFIRMATION MODAL --- */}
         {showClearConfirm && (

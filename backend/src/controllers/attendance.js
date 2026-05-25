@@ -33,7 +33,7 @@ exports.markAttendance = async (req, res, next) => {
 
 exports.clearAttendance = async (req, res, next) => {
   try {
-    const { date, worker_id } = req.query;
+    const { date, worker_id, worker_ids } = req.query;
     if (!date) {
       return res.status(400).json({ error: 'Date parameter is required' });
     }
@@ -41,6 +41,11 @@ exports.clearAttendance = async (req, res, next) => {
     let query = db('attendance').where({ date });
     if (worker_id) {
       query = query.where({ worker_id });
+    } else if (worker_ids) {
+      const ids = worker_ids.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+      if (ids.length > 0) {
+        query = query.whereIn('worker_id', ids);
+      }
     }
     
     await query.delete();
