@@ -48,7 +48,7 @@ const SidebarItem = ({ icon: Icon, label, active, badge, onClick }) => (
   </div>
 );
 
-export default function DashboardLayout({ children, role, headerActions }) {
+export default function DashboardLayout({ children, role, headerActions, subtitle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isQuickActionOpen, setIsQuickActionOpen] = React.useState(false);
@@ -515,9 +515,16 @@ export default function DashboardLayout({ children, role, headerActions }) {
           </header>
         ) : (
           <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-            <h2 className="text-xl font-bold text-slate-800 capitalize">
-              {getPageTitle()}
-            </h2>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 capitalize">
+                {getPageTitle()}
+              </h2>
+              {subtitle && (
+                <p className="text-xs text-slate-400 font-semibold mt-0.5 normal-case">
+                  {subtitle}
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-4">
               {headerActions}
               <div className="relative p-1.5 text-red-500 hover:text-red-600 cursor-pointer transition-colors flex items-center justify-center">
