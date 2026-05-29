@@ -21,7 +21,8 @@ namespace backend.Data
                 new User { Username = "admin", PasswordHash = hashedPassword, Role = "admin" },
                 new User { Username = "hr_manager", PasswordHash = hashedPassword, Role = "hr" },
                 new User { Username = "supervisor1", PasswordHash = hashedPassword, Role = "supervisor" },
-                new User { Username = "accounts_user", PasswordHash = hashedPassword, Role = "accounts" }
+                new User { Username = "accounts_user", PasswordHash = hashedPassword, Role = "accounts" },
+                new User { Username = "worker1", PasswordHash = hashedPassword, Role = "worker" }
             };
 
             context.Users.AddRange(users);
