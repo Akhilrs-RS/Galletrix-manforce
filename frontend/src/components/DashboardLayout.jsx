@@ -63,6 +63,20 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
   const isAccounts = currentRole === "accounts";
   const isAdmin = currentRole === "admin";
 
+  const getRoute = (base) => {
+    if (isHR) return `/hr-${base}`;
+    if (isSupervisor) return `/sv-${base}`;
+    return `/${base}`;
+  };
+
+  const getDashboardRoute = () => {
+    if (isHR) return "/hr-dashboard";
+    if (isSupervisor) return "/sv-dashboard";
+    if (isWorker) return "/worker-dashboard";
+    if (isAccounts) return "/accounts-dashboard";
+    return "/admin-dashboard";
+  };
+
   const getPageTitle = () => {
     const path = location.pathname
       .replace("/", "")
@@ -185,31 +199,15 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
               <SidebarItem
                 icon={LayoutDashboard}
                 label="Dashboard"
-                active={location.pathname.includes("admin-dashboard")}
-                onClick={() =>
-                  navigate(
-                    isHR
-                      ? "/hr-dashboard"
-                      : isSupervisor
-                        ? "/sv-dashboard"
-                        : "/admin-dashboard",
-                  )
-                }
+                active={location.pathname.includes("dashboard") && !location.pathname.includes("worker") && !location.pathname.includes("accounts")}
+                onClick={() => navigate(getDashboardRoute())}
               />
               <SidebarItem
                 icon={Users}
                 label="Workers"
                 badge="142"
                 active={location.pathname.includes("workers")}
-                onClick={() =>
-                  navigate(
-                    isHR
-                      ? "/hr-workers"
-                      : isSupervisor
-                        ? "/sv-workers"
-                        : "/workers",
-                  )
-                }
+                onClick={() => navigate(getRoute("workers"))}
               />
 
               {/* CRM - Restricted to Admin Only */}
@@ -226,15 +224,7 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
                 icon={ClipboardList}
                 label="Work Orders"
                 active={location.pathname.includes("work-orders")}
-                onClick={() =>
-                  navigate(
-                    isHR
-                      ? "/hr-work-orders"
-                      : isSupervisor
-                        ? "/sv-work-orders"
-                        : "/work-orders",
-                  )
-                }
+                onClick={() => navigate(getRoute("work-orders"))}
               />
 
               {isAdmin && (
@@ -253,15 +243,7 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
                 icon={CalendarCheck}
                 label="Attendance"
                 active={location.pathname.includes("attendance")}
-                onClick={() =>
-                  navigate(
-                    isHR
-                      ? "/hr-attendance"
-                      : isSupervisor
-                        ? "/sv-attendance"
-                        : "/attendance",
-                  )
-                }
+                onClick={() => navigate(getRoute("attendance"))}
               />
 
               {!isSupervisor && (
