@@ -105,6 +105,11 @@ export default function App() {
           path="/accounts-dashboard"
           element={<AccountsDashboard />}
         />
+        <Route path="/ac-workers" element={<Workers role="accounts" />} />
+        <Route path="/ac-clients" element={<Clients role="accounts" />} />
+        <Route path="/ac-payroll" element={<Payroll role="accounts" />} />
+        <Route path="/ac-invoices" element={<Invoices role="accounts" />} />
+        <Route path="/ac-expenses" element={<ExpenseCredits />} />
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

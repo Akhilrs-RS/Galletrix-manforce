@@ -66,6 +66,7 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
   const getRoute = (base) => {
     if (isHR) return `/hr-${base}`;
     if (isSupervisor) return `/sv-${base}`;
+    if (isAccounts) return `/ac-${base}`;
     return `/${base}`;
   };
 
@@ -116,6 +117,8 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
           </div>
         </div>
 
+
+
         <nav className="flex-1 space-y-0.5 overflow-y-auto custom-scrollbar">
           {/* --- WORKER SIDEBAR --- */}
           {isWorker && (
@@ -160,32 +163,32 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
               <SidebarItem
                 icon={Users}
                 label="Workers"
-                active={location.pathname === "/workers"}
-                onClick={() => navigate("/workers")}
+                active={location.pathname.includes("workers")}
+                onClick={() => navigate(getRoute("workers"))}
               />
               <SidebarItem
                 icon={Briefcase}
                 label="Clients"
-                active={location.pathname === "/clients"}
-                onClick={() => navigate("/clients")}
+                active={location.pathname.includes("clients")}
+                onClick={() => navigate(getRoute("clients"))}
               />
               <SidebarItem
                 icon={Wallet}
                 label="Payroll Mgmt"
-                active={location.pathname === "/payroll"}
-                onClick={() => navigate("/payroll")}
+                active={location.pathname.includes("payroll")}
+                onClick={() => navigate(getRoute("payroll"))}
               />
               <SidebarItem
                 icon={FileText}
                 label="Client Invoices"
-                active={location.pathname === "/invoices"}
-                onClick={() => navigate("/invoices")}
+                active={location.pathname.includes("invoices")}
+                onClick={() => navigate(getRoute("invoices"))}
               />
               <SidebarItem
                 icon={Coins}
                 label="Expense & Credits"
-                active={location.pathname === "/expenses"}
-                onClick={() => navigate("/expenses")}
+                active={location.pathname.includes("expenses")}
+                onClick={() => navigate(getRoute("expenses"))}
               />
             </>
           )}
