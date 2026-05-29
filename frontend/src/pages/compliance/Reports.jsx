@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Check, Loader2, Download, FileText, AlertTriangle, ChevronDown } from "lucide-react";
+import { Check, Loader2, Download, FileText, AlertTriangle, ChevronDown, Eye } from "lucide-react";
 import api from "../../utils/api";
 
 export default function Reports({ role = "admin" }) {
@@ -73,6 +73,17 @@ export default function Reports({ role = "admin" }) {
     setTimeout(() => {
       setGenerating(false);
       setNotification(`${selectedDataset} downloaded successfully as ${format}!`);
+      setTimeout(() => setNotification(null), 3500);
+    }, 1800);
+  };
+
+  const handleView = () => {
+    setGenerating(true);
+    setNotification(`Loading ${selectedDataset} for viewing...`);
+
+    setTimeout(() => {
+      setGenerating(false);
+      setNotification(`${selectedDataset} is ready to view!`);
       setTimeout(() => setNotification(null), 3500);
     }, 1800);
   };
@@ -232,6 +243,12 @@ export default function Reports({ role = "admin" }) {
 
               {/* Action Buttons for downloading */}
               <div className="space-y-3 mt-12">
+                <button
+                  onClick={() => handleView()}
+                  className="w-full bg-[#3b82f6]/10 hover:bg-[#3b82f6]/20 border border-[#3b82f6]/20 text-[#3b82f6] py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-[#3b82f6]/5"
+                >
+                  <Eye size={14} /> View Report
+                </button>
                 <button
                   onClick={() => handleDownload("PDF")}
                   className="w-full bg-[#ef4444]/10 hover:bg-[#ef4444]/20 border border-[#ef4444]/20 text-[#ef4444] py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-[#ef4444]/5"
