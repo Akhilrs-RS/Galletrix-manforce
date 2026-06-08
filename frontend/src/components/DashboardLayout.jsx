@@ -63,7 +63,7 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
       try {
         api.get("/workers").then((res) => setWorkerCount(res.data.length)).catch((err) => console.error(err));
         api.get("/recruitment").then((res) => setRecruitmentCount(res.data.length)).catch((err) => console.error(err));
-        api.get("/leaverequests").then((res) => setLeaveCount(res.data.length)).catch((err) => console.error(err));
+        api.get("/leaverequests").then((res) => setLeaveCount(res.data.filter(r => r.status === 'Pending').length)).catch((err) => console.error(err));
         api.get("/documents").then((res) => setDocumentCount(res.data.length)).catch((err) => console.error(err));
       } catch (err) {
         console.error("Failed to fetch counts:", err);

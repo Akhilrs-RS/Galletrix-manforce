@@ -125,6 +125,7 @@ namespace backend.Controllers
 
     public class DocumentUploadDto
     {
+        [FromForm(Name = "worker_id")]
         public int? WorkerId { get; set; }
         public string? Type { get; set; }
         public string? Number { get; set; }

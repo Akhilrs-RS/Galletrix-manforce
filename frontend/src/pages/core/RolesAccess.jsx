@@ -20,14 +20,14 @@ import {
 // --- Mock User Generator ---
 const generateMockUsers = () => {
   const list = [
-    { name: "Anjali Nair", role: "HR", loginId: "MWF-HR-002", password: "passwordHR2", status: "Active" },
-    { name: "John", role: "Supervisor", loginId: "MWF-SUP-003", password: "passwordSUP3", status: "Active" },
-    { name: "Shameer", role: "Worker", loginId: "MWF-WRK-0142", password: "passwordWRK142", status: "Active" },
-    { name: "Nikhil Raj", role: "Worker", loginId: "MWF-WRK-0108", password: "passwordWRK108", status: "Active" },
-    { name: "System Administrator", role: "Admin", loginId: "MWF-ADM-001", password: "adminPassword", status: "Active" },
-    { name: "Priya Sharma", role: "HR", loginId: "MWF-HR-001", password: "passwordHR1", status: "Active" },
-    { name: "Robert Dow", role: "Supervisor", loginId: "MWF-SUP-001", password: "passwordSUP1", status: "Active" },
-    { name: "Amit Patel", role: "Supervisor", loginId: "MWF-SUP-002", password: "passwordSUP2", status: "Inactive" },
+    { name: "Anjali Nair", role: "HR", loginId: "MWF-HR-002", password: "passwordHR2", status: "Active", hasCustomPassword: true },
+    { name: "John", role: "Supervisor", loginId: "MWF-SUP-003", password: "passwordSUP3", status: "Active", hasCustomPassword: true },
+    { name: "Shameer", role: "Worker", loginId: "MWF-WRK-0142", password: "passwordWRK142", status: "Active", hasCustomPassword: false },
+    { name: "Nikhil Raj", role: "Worker", loginId: "MWF-WRK-0108", password: "passwordWRK108", status: "Active", hasCustomPassword: false },
+    { name: "System Administrator", role: "Admin", loginId: "MWF-ADM-001", password: "adminPassword", status: "Active", hasCustomPassword: true },
+    { name: "Priya Sharma", role: "HR", loginId: "MWF-HR-001", password: "passwordHR1", status: "Active", hasCustomPassword: false },
+    { name: "Robert Dow", role: "Supervisor", loginId: "MWF-SUP-001", password: "passwordSUP1", status: "Active", hasCustomPassword: false },
+    { name: "Amit Patel", role: "Supervisor", loginId: "MWF-SUP-002", password: "passwordSUP2", status: "Inactive", hasCustomPassword: false },
   ];
 
   const workerNames = [
@@ -49,7 +49,8 @@ const generateMockUsers = () => {
       role: "Worker",
       loginId: `MWF-WRK-0${idNum}`,
       password: `passWorker${i}`,
-      status: isInactive ? "Inactive" : "Active"
+      status: isInactive ? "Inactive" : "Active",
+      hasCustomPassword: false
     });
   }
 
@@ -62,7 +63,6 @@ export default function RolesAccess({ role = "admin" }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [visiblePasswords, setVisiblePasswords] = useState({}); // { loginId: boolean }
   const [activePermTab, setActivePermTab] = useState("Admin");
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -120,13 +120,6 @@ export default function RolesAccess({ role = "admin" }) {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const togglePasswordVisibility = (loginId) => {
-    setVisiblePasswords((prev) => ({
-      ...prev,
-      [loginId]: !prev[loginId]
-    }));
-  };
-
   const handleAddUser = (e) => {
     e.preventDefault();
     if (!newName || !newPassword) return;
@@ -142,7 +135,8 @@ export default function RolesAccess({ role = "admin" }) {
       role: newRole,
       loginId: newLoginId,
       password: newPassword,
-      status: "Active"
+      status: "Active",
+      hasCustomPassword: false
     };
 
     setUsers((prev) => [newUser, ...prev]);
@@ -366,15 +360,13 @@ export default function RolesAccess({ role = "admin" }) {
                       <td className="px-6 py-4 font-mono font-medium text-slate-600">{user.loginId}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-slate-600 select-all">
-                            {visiblePasswords[user.loginId] ? user.password : "•••••••"}
-                          </span>
-                          <button
-                            onClick={() => togglePasswordVisibility(user.loginId)}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
-                          >
-                            {visiblePasswords[user.loginId] ? <EyeOff size={13} /> : <Eye size={13} />}
-                          </button>
+                          {user.hasCustomPassword ? (
+                            <span className="font-mono text-slate-400 select-none">••••••••</span>
+                          ) : (
+                            <span className="font-mono font-bold text-slate-700 select-all bg-amber-50 px-2 py-0.5 rounded border border-amber-100">
+                              {user.password}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-8 py-4 text-center relative">
@@ -412,7 +404,7 @@ export default function RolesAccess({ role = "admin" }) {
                                   const generatedPass = `temp${Math.floor(1000 + Math.random() * 9000)}`;
                                   setUsers((prev) =>
                                     prev.map((u) =>
-                                      u.loginId === user.loginId ? { ...u, password: generatedPass } : u
+                                      u.loginId === user.loginId ? { ...u, password: generatedPass, hasCustomPassword: false } : u
                                     )
                                   );
                                   triggerNotify(`Password reset for ${user.name} to "${generatedPass}"`);

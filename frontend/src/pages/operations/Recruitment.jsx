@@ -28,7 +28,7 @@ export default function Recruitment({ role = "admin" }) {
 
   // Form State
   const [newCandidate, setNewCandidate] = useState({
-    candidateName: "",
+    candidate_name: "",
     role: "Helper",
     nationality: "Indian",
     experience: "1 yr",
@@ -106,7 +106,7 @@ export default function Recruitment({ role = "admin" }) {
   };
 
   const filteredCandidates = candidates.filter((c) =>
-    (c.candidateName || "").toLowerCase().includes(searchQuery.toLowerCase()),
+    (c.candidate_name || "").toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -188,8 +188,8 @@ export default function Recruitment({ role = "admin" }) {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white text-[10px] font-bold">
-                          {c.candidateName
-                            ? c.candidateName
+                          {c.candidate_name
+                            ? c.candidate_name
                                 .split(" ")
                                 .map((n) => n[0])
                                 .join("")
@@ -197,7 +197,7 @@ export default function Recruitment({ role = "admin" }) {
                         </div>
                         <div>
                           <p className="text-[11px] font-bold text-slate-800 leading-tight">
-                            {c.candidateName}
+                            {c.candidate_name}
                           </p>
                           <p className="text-[10px] text-slate-400 font-medium">
                             {c.role}
@@ -285,7 +285,7 @@ export default function Recruitment({ role = "admin" }) {
                       onChange={(e) =>
                         setNewCandidate({
                           ...newCandidate,
-                          candidateName: e.target.value,
+                          candidate_name: e.target.value,
                         })
                       }
                     />

@@ -82,7 +82,7 @@ export default function WorkOrders({ role }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/work-orders");
+      const res = await api.get("/workorders");
 
       if (res.data && res.data.length > 0) {
         setWorkOrders(res.data);
@@ -123,10 +123,10 @@ export default function WorkOrders({ role }) {
         ];
 
         for (const order of mockWorkOrders) {
-          await api.post("/work-orders", order);
+          await api.post("/workorders", order);
         }
 
-        const freshRes = await api.get("/work-orders");
+        const freshRes = await api.get("/workorders");
         setWorkOrders(freshRes.data);
       }
     } catch (err) {
@@ -217,7 +217,7 @@ export default function WorkOrders({ role }) {
         start_date: formData.start_date || null,
         est_budget: parseFloat(formData.est_budget.toString().replace(/[^0-9.]/g, "")) || 0,
       };
-      await api.post("/work-orders", payload);
+      await api.post("/workorders", payload);
       setIsModalOpen(false);
       setFormData({
         site_name: "",
