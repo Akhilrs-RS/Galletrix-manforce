@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import api from "../utils/api";
 import {
   LayoutDashboard,
   Users,
@@ -40,7 +41,7 @@ const SidebarItem = ({ icon: Icon, label, active, badge, onClick }) => (
         {label}
       </span>
     </div>
-    {badge && (
+    {badge > 0 && (
       <span className="bg-brand-gold text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">
         {badge}
       </span>
@@ -52,6 +53,24 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
   const navigate = useNavigate();
   const location = useLocation();
   const [isQuickActionOpen, setIsQuickActionOpen] = React.useState(false);
+  const [workerCount, setWorkerCount] = React.useState(0);
+  const [recruitmentCount, setRecruitmentCount] = React.useState(0);
+  const [leaveCount, setLeaveCount] = React.useState(0);
+  const [documentCount, setDocumentCount] = React.useState(0);
+
+  React.useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        api.get("/workers").then((res) => setWorkerCount(res.data.length)).catch((err) => console.error(err));
+        api.get("/recruitment").then((res) => setRecruitmentCount(res.data.length)).catch((err) => console.error(err));
+        api.get("/leaverequests").then((res) => setLeaveCount(res.data.length)).catch((err) => console.error(err));
+        api.get("/documents").then((res) => setDocumentCount(res.data.length)).catch((err) => console.error(err));
+      } catch (err) {
+        console.error("Failed to fetch counts:", err);
+      }
+    };
+    fetchCounts();
+  }, []);
 
   // Use localStorage for persistence across navigations
   const savedRole = localStorage.getItem("userRole");
@@ -208,7 +227,7 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
               <SidebarItem
                 icon={Users}
                 label="Workers"
-                badge="142"
+                badge={workerCount}
                 active={location.pathname.includes("workers")}
                 onClick={() => navigate(getRoute("workers"))}
               />
@@ -254,7 +273,7 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
                   <SidebarItem
                     icon={UserCheck}
                     label="Recruitment"
-                    badge="7"
+                    badge={recruitmentCount}
                     active={location.pathname.includes("recruitment")}
                     onClick={() =>
                       navigate(isHR ? "/hr-recruitment" : "/recruitment")
@@ -291,7 +310,7 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
                   <SidebarItem
                     icon={ClipboardList}
                     label="Leave Mgmt"
-                    badge="3"
+                    badge={leaveCount}
                     active={location.pathname.includes("leave-mgmt")}
                     onClick={() =>
                       navigate(isHR ? "/hr-leave-mgmt" : "/leave-mgmt")
@@ -309,7 +328,7 @@ export default function DashboardLayout({ children, role, headerActions, subtitl
                   <SidebarItem
                     icon={FileStack}
                     label="Documents"
-                    badge="3"
+                    badge={documentCount}
                     active={location.pathname.includes("documents")}
                     onClick={() =>
                       navigate(isHR ? "/hr-documents" : "/documents")

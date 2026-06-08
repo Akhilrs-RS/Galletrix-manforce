@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Hook for navigation
+import api from "../../utils/api";
 import DashboardLayout from "../../components/DashboardLayout";
 
 const StatCard = ({ title, value, colorClass }) => (
@@ -15,6 +16,19 @@ const StatCard = ({ title, value, colorClass }) => (
 
 export default function SupervisorDashboard() {
   const navigate = useNavigate(); // Initialize navigation
+  const [workerCount, setWorkerCount] = useState(0);
+
+  useEffect(() => {
+    const fetchWorkerCount = async () => {
+      try {
+        const response = await api.get("/workers");
+        setWorkerCount(response.data.length);
+      } catch (err) {
+        console.error("Failed to fetch worker count:", err);
+      }
+    };
+    fetchWorkerCount();
+  }, []);
 
   const deployedWorkers = [
     {
@@ -46,7 +60,7 @@ export default function SupervisorDashboard() {
       <div className="space-y-8">
         {/* STATS */}
         <div className="grid grid-cols-3 gap-6">
-          <StatCard title="Total Workers" value="142" />
+          <StatCard title="Total Workers" value={workerCount} />
           <StatCard
             title="Present Today"
             value="124"

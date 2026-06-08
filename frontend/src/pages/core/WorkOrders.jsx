@@ -214,6 +214,7 @@ export default function WorkOrders({ role }) {
     try {
       const payload = {
         ...formData,
+        start_date: formData.start_date || null,
         est_budget: parseFloat(formData.est_budget.toString().replace(/[^0-9.]/g, "")) || 0,
       };
       await api.post("/work-orders", payload);

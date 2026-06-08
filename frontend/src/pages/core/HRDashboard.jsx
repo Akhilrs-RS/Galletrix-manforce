@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
+import api from "../../utils/api";
 import {
   ChevronRight,
   AlertTriangle,
@@ -28,6 +29,19 @@ const StatCard = ({ title, value, subtext, colorClass, onClick }) => (
 
 export default function HRDashboard({ role = "hr" }) {
   const navigate = useNavigate();
+  const [workerCount, setWorkerCount] = useState(0);
+
+  useEffect(() => {
+    const fetchWorkerCount = async () => {
+      try {
+        const response = await api.get("/workers");
+        setWorkerCount(response.data.length);
+      } catch (err) {
+        console.error("Failed to fetch worker count:", err);
+      }
+    };
+    fetchWorkerCount();
+  }, []);
 
   return (
     <DashboardLayout role={role}>
@@ -36,7 +50,7 @@ export default function HRDashboard({ role = "hr" }) {
         <div className="grid grid-cols-4 gap-6">
           <StatCard
             title="Total Workers"
-            value="142"
+            value={workerCount}
             subtext="+4 this month"
             colorClass="text-emerald-500"
           />
@@ -176,7 +190,7 @@ export default function HRDashboard({ role = "hr" }) {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-black text-slate-800">142</span>
+                <span className="text-3xl font-black text-slate-800">{workerCount}</span>
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                   Total
                 </span>
